@@ -20,7 +20,7 @@ db.movies.insertMany([
 	 {"title":"movie16","year":"2015","_id":"mv16","rating":{"score":50,"rank":8}},
 	 {"title":"movie17","year":"2015","_id":"mv17","rating":{"score":50,"rank":9}},
 	 {"title":"movie18","year":"2015","_id":"mv18","rating":{"score":40,"rank":10}},
-	 {"title":"movie19","year":"2015","_id":"mv19","rating":{"score":40,"rank":10}},
+	 {"title":"movie19","year":"2015","_id":"mv19","rating":{"score":40,"rank":10}}, 
 	 {"title":"movie20","year":"2015","_id":"mv20","rating":{"score":40,"rank":10}},
 	 {"title":"movie21","year":"2015","_id":"mv21","rating":{"score":40,"rank":11}},
 	 {"title":"movie22","year":"2015","_id":"mv22","rating":{"score":30,"rank":12}},
