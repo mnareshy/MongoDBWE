@@ -1,0 +1,10 @@
+INSER
+
+> db.movies.insertOne({"title":"bahubali","year":"2014","imdb":"2014bb"})
+> db.movies.insertOne({"title":"bahubali","year":"2014","_id":"2014bb"})
+
+> db.movies.insertMany([
+	 {"title":"bahubali","year":"2014","_id":"2014bb1"},
+	 {"title":"bahubali2","year":"2017","_id":"2017bb"},
+	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv"},
+	 {"title":"premam","year":"2016","_id":"2016pm"} ])
