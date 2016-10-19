@@ -31,8 +31,7 @@ db.movies.insertMany([
 	 {"title":"premam","year":"2016","_id":"2016pm","rating":{"score":100,"rank":1}},
 	 {"title":"premam","year":"2016","_id":"2016pm1","rating":{"score":100,"rank":1}}],
 	 {"ordered":false});
-	 
-	 
+	 	 
 	 
 	 
 	 

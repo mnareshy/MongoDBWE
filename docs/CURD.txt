@@ -43,8 +43,6 @@ SEARCH - READINg DOCUMENTS
 >db.movies.find({"rating.score":70}) // "" necessary when using nested document fields
 
 
- 
-
 
 
 
