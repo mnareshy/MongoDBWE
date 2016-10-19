@@ -1,4 +1,4 @@
-INSER
+INSERT
 
 > db.movies.insertOne({"title":"bahubali","year":"2014","imdb":"2014bb"})
 > db.movies.insertOne({"title":"bahubali","year":"2014","_id":"2014bb"})
@@ -8,3 +8,53 @@ INSER
 	 {"title":"bahubali2","year":"2017","_id":"2017bb"},
 	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv"},
 	 {"title":"premam","year":"2016","_id":"2016pm"} ])
+	 
+> db.movies.insertMany([
+	 {"title":"bahubali","year":"2014","_id":"2014bb1"},
+	 {"title":"bahubali2","year":"2017","_id":"2017bb"},
+	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv"},
+	 {"title":"premam","year":"2016","_id":"2016pm"},
+	 {"title":"premam","year":"2016","_id":"2016pm1"}],
+	 {"ordered":false});
+	 
+// by default inserMany is ordered , which means that if there is an error in one of the document
+//it wont insert the remaining documents.
+//if the "ordered":false , it will still continue to insert other records! 
+
+// Mongo Db creates the Object ID if we dongt supply , and the format as follows
+// Date-MAC Address-PID-counter    its a 12 digit hex string(4-3-2-3 bytes respectively)	 
+	 
+DELETE
+
+>db.movies.drop()
+
+SEARCH - READINg DOCUMENTS
+
+>db.movies.find()
+>db.movies.find().pretty()
+
+// pretty() helps for formatting
+
+>db.movies.find({"year":"2016"})
+>db.movies.find({"title":"premam","year":"2016"})
+
+>db.movies.find().count();
+
+>db.movies.find({"rating.score":70}) // "" necessary when using nested document fields
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
