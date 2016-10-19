@@ -42,6 +42,45 @@ SEARCH - READINg DOCUMENTS
 
 >db.movies.find({"rating.score":70}) // "" necessary when using nested document fields
 
+>db.movies.find({"actors":["chiranjeevi","balakrishna","ramyakrishna","sudha"]})  
+// only finds if all the array elements matches
+//And only if the order also matches
+
+>db.movies.find({"actors":"chiranjeevi"})
+//to search one element matches
+
+>db.movies.find({"actors":"chiranjeevi","actors":"balakrishna"})
+//to search multiple elements matches 
+
+
+>db.movies.find({"actors.0":"chiranjeevi"})
+//to search one element matches that too in a specific location
+
+// find command gives the result in batch, maximum batch size not exceeding 1 mb
+//to iterate further use "it" command
+
+CURSORS
+
+>var c =  db.movies.find();
+>var doc = function(){return c.hasNext()?c.next():null;}
+>c.objsLeftInBatch();
+
+PROJECTIONS
+
+>db.movies.find({"title":"movie1"},{"title":1}) 
+//this is explicitly including , _id comes by default
+>db.movies.find({"title":"movie1"},{"title":1,"_id":0})
+//this excludes _id 
+>db.movies.find({"title":"movie1"},{"actors":0,"_id":0})
+//this is explicitly exluding some fields
+
+
+
+
+
+
+
+
 
 
 

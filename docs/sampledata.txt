@@ -34,6 +34,19 @@ db.movies.insertMany([
 	 	 
 	 
 	 
+>	 db.movies.insertMany([
+	 {"title":"movie28","year":"2015","_id":"mv28","rating":{"score":99,"rank":2},
+	 "actors":["chiranjeevi","balakrishna","ramyakrishna","sudha"]},
+	 {"title":"movie29","year":"2015","_id":"mv29","rating":{"score":99,"rank":2},
+	 "actors":["nagarjuna","venkatesh","ramba","jayasudha"]},
+	 {"title":"movie30","year":"2015","_id":"mv30","rating":{"score":99,"rank":3},
+	 "actors":["chiranjeevi","balakrishna","kota","pawankalyan"]},
+	 {"title":"movie31","year":"2015","_id":"mv31","rating":{"score":99,"rank":3},
+	 "actors":["nagarjuna","balakrishna","ramba","rayapradha"]}],
+	 
+	 {"ordered":false});
+	 
+	 
 	 
 	 
 	 
