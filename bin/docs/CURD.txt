@@ -70,33 +70,15 @@ PROJECTIONS
 >db.movies.find({"title":"movie1"},{"title":1}) 
 //this is explicitly including , _id comes by default
 >db.movies.find({"title":"movie1"},{"title":1,"_id":0})
-//this excludes _id , inclusions and exclusions in combinations works only with _id field
+//this excludes _id 
 >db.movies.find({"title":"movie1"},{"actors":0,"_id":0})
-//this is explicitly excluding some fields
-
-OPERATORS
-
->db.movies.find({"rating.rank":{$gte:2, $lte:12}},{"title":1,"rating":1,"_id":0}).pretty()
->db.movies.find({"rating.rank":{$gte:2}, "rating.score":{$lte:91}},{"title":1,"rating":1,"_id":0}).pretty()
-
->db.movies.find({"rating.score":{$ne:0}},{"title":1,"rating":1,"_id":0}).pretty()
-//this will not only gives the documents that have score 0, but also the documents those doesn't contain rating.score field as well!
+//this is explicitly exluding some fields
 
 
->db.movies.find({"rating.score":{$in:[90,91,97,99]}},{"title":1,"rating":1,"_id":0}).pretty()
-//$in should be always in a array
 
 
-ELEMENT OPERATORS
-
->db.movies.find({"rating":{$exists:true}},{"title":1,"rating":1,"_id":0}).pretty()
->db.movies.find({"rating.score":{$exists:true}},{"title":1,"rating":1,"_id":0}).pretty()
->db.movies.find({"rating":{$exists:false}},{"title":1,"rating":1,"_id":0}).pretty()
->db.movies.find({"actors":{$exists:true}},{"title":1,"actors":1,"_id":0}).pretty()
 
 
->db.movies.find({"_id":{$type:"string"}},{"title":1,"rating":1,"_id":0}).pretty()
->db.movies.find({"_id":{$type:"string"}},{"title":1,"actors":1,"_id":0}).pretty()
 
 
 
