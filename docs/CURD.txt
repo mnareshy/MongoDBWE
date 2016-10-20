@@ -99,6 +99,22 @@ ELEMENT OPERATORS
 >db.movies.find({"_id":{$type:"string"}},{"title":1,"actors":1,"_id":0}).pretty()
 
 
+LOGICAL OPERATORS
+
+>db.movies.find({"$or":[{"rating":{$exists:true}},{"actors":{$exists:true}}]},{"title":1,"rating":1,"actors":1,"_id":0}).pretty()
+// $or operator always takes an array
+
+>db.movies.find({"$and":[{"rating":{$exists:true}},{"actors":{$exists:true}}]},{"title":1,"rating":1,"actors":1,"_id":0}).pretty()
+// $and operator always takes an array
+>db.movies.find({"rating":{$exists:true},"actors":{$exists:true}},{"title":1,"rating":1,"actors":1,"_id":0}).pretty()
+//This gives the same result as $and operator , but if there is a need on anding results on same element this command gives improper results.
+//$and is appropriate in that scenario
+>db.movies.find({"$and":[{"rating.score":{$exists:true}},{"rating.score":{$gte:91}}]},{"title":1,"rating":1,"actors":1,"_id":0}).pretty()
+
+
+
+
+
 
 
 
