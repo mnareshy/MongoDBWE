@@ -126,7 +126,11 @@ ARRAY OPERATORS
 >db.movies.find({"actors":{"$in":["chiranjeevi","balakrishna"]}})
 //finds the documents those contains any of the array elements 
 
+>db.movies.find({"actors":{"$size":1}})
+//finds the documents those contains array size specified
 
+>db.movies.find({"rating":{"score":99,"rank":{"$gte":10}}})
+>db.movies.find({"rating":{"$elemMatch":{"score":99,"rank":{"$gte":10}}}}) ????????? TBD
 
 
 
