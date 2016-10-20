@@ -112,9 +112,19 @@ LOGICAL OPERATORS
 >db.movies.find({"$and":[{"rating.score":{$exists:true}},{"rating.score":{$gte:91}}]},{"title":1,"rating":1,"actors":1,"_id":0}).pretty()
 
 
+REGEX - REGULAR EXPRESSIONS
+
+>db.movies.find({"title":{$regex:"/*m"}},{"title":1,"actors":1,"_id":0}).pretty()
 
 
+ARRAY OPERATORS
 
+>db.movies.find({"actors":{"$all":["chiranjeevi","balakrishna"]}})
+//finds the documents those contains all the array elements 
+>db.movies.find({"actors":["chiranjeevi","balakrishna"]})
+//finds the documents those exatly matches with the array specifies including the sequence
+>db.movies.find({"actors":{"$in":["chiranjeevi","balakrishna"]}})
+//finds the documents those contains any of the array elements 
 
 
 
