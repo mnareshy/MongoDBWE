@@ -46,8 +46,67 @@ db.movies.insertMany([
 	 
 	 {"ordered":false});
 	 
+
+>	db.movies.insertMany([
+	 {"title":"movie32","year":"2015","_id":"mv32","rating":{"score":76,"rank":2},
+	 "actors":["chiranjeevi","balakrishna","ramyakrishna","sudha"],
+	 collections: [ 82, 85, 88 ]},
+	 {"title":"movie33","year":"2015","_id":"mv33","rating":{"score":45,"rank":4},
+	 "actors":["nagarjuna","venkatesh","ramba","jayasudha"],
+	 collections: [ 72, 81, 58 ]},
+	 {"title":"movie34","year":"2015","_id":"mv34","rating":{"score":91,"rank":3},
+	 "actors":["chiranjeevi","balakrishna","kota","pawankalyan"],
+	 collections: [ 12, 25, 38 ]},
+	 {"title":"movie35","year":"2015","_id":"mv35","rating":{"score":97,"rank":3},
+	 "actors":["nagarjuna","balakrishna","ramba","rayapradha"],
+	 collections: [ 40, 42, 37 ]}],
+	 
+	 {"ordered":false});
+)
 	 
 	 
+>	 db.movies.insertMany([
+	 {"title":"movie36","year":"2015","_id":"mv36","rating":{"score":76,"rank":2},
+	 "actors":["chiranjeevi","venkatesh","ramyakrishna","sudha"],
+	 "collections": [ 82, 85, 98 ],
+	 "certificate":{"rating":"U","score":77}},
+	 {"title":"movie37","year":"2015","_id":"mv37","rating":{"score":45,"rank":4},
+	 "actors":["raviteja","venkatesh","rajini","jayasudha"],
+	 "collections": [ 72, 84, 58 ],
+	 "certificate":{"rating":"UA","score":72}},
+	 {"title":"movie38","year":"2015","_id":"mv38","rating":{"score":91,"rank":3},
+	 "actors":["nani","mahesh","kota","pawankalyan"],
+	 "collections": [ 12, 25, 38 ],
+	 "certificate":{"rating":"U","score":80}},
+	 {"title":"movie39","year":"2015","_id":"mv39","rating":{"score":97,"rank":3},
+	 "actors":["Mahesh","balakrishna","ramba","kajal"],
+	 "collections": [ 40, 42, 37 ],
+	 "certificate":{"rating":"A","score":40}}],
 	 
+	 {"ordered":false});
+	 
+>	 db.movies.insertMany([
+	 {"title":"movie40","year":"2015","_id":"mv40","rating":{"score":76,"rank":2},
+	 "actors":["chiranjeevi","venkatesh","ramyakrishna","sudha"],
+	 "collections": [ 82, 85, 98 ],
+	 "certificate":{"rating":"U","score":77},
+	 "techdept":[{"totaldirecttiondept":10, "totalstaff":110}, {"totaldirecttiondept":12, "totalstaff":120}]},
+	 {"title":"movie41","year":"2015","_id":"mv41","rating":{"score":45,"rank":4},
+	 "actors":["raviteja","venkatesh","rajini","jayasudha"],
+	 "collections": [ 72, 84, 58 ],
+	 "certificate":{"rating":"UA","score":72},
+	 "techdept":[{"totaldirecttiondept":30, "totalstaff":130}, {"totaldirecttiondept":12, "totalstaff":120}]},
+	 {"title":"movie42","year":"2015","_id":"mv42","rating":{"score":91,"rank":3},
+	 "actors":["nani","mahesh","kota","pawankalyan"],
+	 "collections": [ 12, 25, 38 ],
+	 "certificate":{"rating":"U","score":80},
+	 "techdept":[{"totaldirecttiondept":40, "totalstaff":230}, {"totaldirecttiondept":33, "totalstaff":120}]},
+	 {"title":"movie43","year":"2015","_id":"mv43","rating":{"score":97,"rank":3},
+	 "actors":["Mahesh","balakrishna","ramba","kajal"],
+	 "collections": [ 40, 42, 37 ],
+	 "certificate":{"rating":"A","score":40},
+	 "techdept":[{"totaldirecttiondept":22, "totalstaff":230}, {"totaldirecttiondept":43, "totalstaff":420}]}],
+	 
+	 {"ordered":false});
 	 
 	 

@@ -129,8 +129,13 @@ ARRAY OPERATORS
 >db.movies.find({"actors":{"$size":1}})
 //finds the documents those contains array size specified
 
->db.movies.find({"rating":{"score":99,"rank":{"$gte":10}}})
->db.movies.find({"rating":{"$elemMatch":{"score":99,"rank":{"$gte":10}}}}) ????????? TBD
+
+>db.movies.find({"collections": { $elemMatch: { $gte: 80, $lt: 85 } } })
+
+>db.movies.find({"techdept": { $elemMatch: { "totaldirecttiondept":22 , "totalstaff":{"$gte":70} } } })
+
+>db.movies.find({"techdept": { $elemMatch: { "totaldirecttiondept":{"$gte":22} , "totalstaff":{"$gte":70} } } })
+
 
 
 
