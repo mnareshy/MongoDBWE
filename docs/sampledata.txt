@@ -108,5 +108,12 @@ db.movies.insertMany([
 	 "techdept":[{"totaldirecttiondept":22, "totalstaff":230}, {"totaldirecttiondept":43, "totalstaff":420}]}],
 	 
 	 {"ordered":false});
+
+>	 db.movies.insertMany([
+	 {"title":"bahubali","year":"2014","_id":"2014bb111","rating":{"score":100,"rank":null}},
+	 {"title":"bahubali2","year":"2017","_id":"2017bb1","rating":{"score":100,"rank":null}},
+	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv1","rating":{"score":100,"rank":null}}],
+	 
+	  {"ordered":false});
 	 
 	 

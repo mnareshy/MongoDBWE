@@ -136,11 +136,59 @@ ARRAY OPERATORS
 
 >db.movies.find({"techdept": { $elemMatch: { "totaldirecttiondept":{"$gte":22} , "totalstaff":{"$gte":70} } } })
 
+UPDATE
+
+>db.movies.updateOne({"title":"movie21"},{$set:{"year":2012}})
+
+>db.movies.updateOne({"title":"movie21"},{$set:{ "certificate":{"rating":"U","score":77}}})
+
+>db.movies.updateOne({"title":"movie21"},{$inc:{"year":4}})
+
+>db.movies.updateOne({"title":"movie21"},{$inc:{"year":-4}})
+
+
+UPDATE ARRAYS
+
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":99}})
+					 
+					 
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":{"$each":[21,44]}}})
+					 
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":[22,47]}})
+// with out $each the entire array will be inserted as a single element
+					 
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$pop":{"collections":[22,47]}})
+
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$pop":{"collections":[22,47]}})
+					 
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":{"$each":[21,44],"$slice":5}}})
+//$slice will ensure you have first five elements are only there in the array
+
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":{"$each":[21,44],"$slice":5}}})
+//$slice will ensure you have first five elements are only there in the array
+
+>db.movies.updateOne({"title":"movie32"} , 
+					 {"$push":{"collections":{"$each":[21,44],"$position":0,"$slice":5}}})
+//$slice will ensure you have first five elements are only there in the array
 
 
 
+UPDATE MANY
 
+>db.movies.find({"rating.rank":null})
 
+>db.movies.updateMany({"rating.rank":null},
+					  {"$unset":{"rating.rank":""}})
+					  
+>db.movies.updateMany({"rating.rank":null},
+					  {"$set":{"rating.rank":0}})
 
 
 
