@@ -115,5 +115,32 @@ db.movies.insertMany([
 	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv1","rating":{"score":100,"rank":null}}],
 	 
 	  {"ordered":false});
+	  
+>	 db.cinema.insertMany([
+	 {"title":"bahubali","year":"2014","_id":"2014bb111","rating":{"score":100,"rank":20}},
+	 {"title":"bahubali2","year":"2017","_id":"2017bb12","rating":{"score":100,"rank":22}},
+	 {"title":"bale bale magadivoi","year":"2015","_id":"2015bbmv12","rating":{"score":100,"rank":33}}],
+	 
+	  {"ordered":false});
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
 	 
 	 

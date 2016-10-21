@@ -191,6 +191,21 @@ UPDATE MANY
 					  {"$set":{"rating.rank":0}})
 
 
+UPSERT
+
+>db.movies.updateMany({"_id":cinema._id},
+					  {"$set":cinema},
+					  {"$upsert":true})  ?????
+					  
+REPLACE
+
+>db.movies.replaceOne({"title":"movie32"},{"title":"movie132","year":"2015","_id":"mv32","rating":{"score":76,"rank":2},
+	 "actors":["chiranjeevi","balakrishna","ramyakrishna","sudha"],
+	 collections: [ 82, 85, 88 ]})
+	 
+	 
+					  
+					  
 
 
 
