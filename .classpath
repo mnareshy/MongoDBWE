@@ -17,4 +17,5 @@
   <classpathentry kind="var" path="M2_REPO/org/eclipse/jetty/jetty-security/9.0.2.v20130417/jetty-security-9.0.2.v20130417.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/freemarker/freemarker/2.3.19/freemarker-2.3.19.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-simple/1.6.4/slf4j-simple-1.6.4.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/mongodb/mongo-java-driver/3.2.2/mongo-java-driver-3.2.2.jar"/>
 </classpath>
