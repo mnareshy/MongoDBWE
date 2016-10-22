@@ -16,8 +16,8 @@ public class DocumentTest {
 				.append("rating", new Document()
 						.append("score", 33)
 						.append("rank", 7));
-		
-		
+
+
 		JsonWritter.print(documnet);
 
 	}

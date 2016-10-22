@@ -1,10 +1,10 @@
 package com.mongodb.we;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.bson.BSON;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -14,10 +14,11 @@ import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 import com.mongodb.helpers.JsonWritter;
 
-public class ProjectionTest {
+public class DeleteTest {
 
 	public static void main(String[] args) {
 
@@ -28,26 +29,23 @@ public class ProjectionTest {
 		MongoCollection<Document> collection =   mongoDB.getCollection("actors");
 
 
-		Bson filter = Filters.or(Filters.eq("name", "nagarjuna"),Filters.gte("rating.rank", 1));
 
-		//		Bson projection = new Document("debutyear" , 1);
-
-		//		Bson projection = new Document("debutyear" , 1).append("_id", 0);
-
-		//		Bson projection = new Document("debutyear" , 1).append("name", 1).append("_id", 0);
-
-		//		Bson projection = new Document("debutyear" , 1).append("name", 1).append("_id", 0);
-
-
-		//		Bson projection = Projections.include("debutyear","name");
+		collection.updateOne(Filters.eq("name", "qqqq"),new Document("$set",
+				new Document("name", "mahesh babu")
+				.append("debutyear", 2000)
+				.append("movies", Arrays.asList("murari","pokiri","svbc","srimantudu"))
+				.append("rating", new Document()
+						.append("score", 99)
+						.append("rank", 1))),new UpdateOptions().upsert(true));
 
 
-		Bson projection = Projections.fields(Projections.include("debutyear","name"),Projections.exclude("_id"));
 
+//		collection.deleteOne(new Document("name", "mahesh babu"));
+		
+		collection.deleteMany(Filters.eq("name", "mahesh babu"));
 
-		List<Document> actors = collection.find(filter)
-				.projection(projection)
-				.into(new ArrayList<Document>());
+		
+		List<Document> actors = collection.find().into(new ArrayList<Document>());
 
 		for (Iterator iterator = actors.iterator(); iterator.hasNext();) {
 			Document document = (Document) iterator.next();

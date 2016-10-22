@@ -15,9 +15,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.helpers.JsonWritter;
 
-public class ProjectionTest {
+public class SortLimitSkipTest {
 
 	public static void main(String[] args) {
 
@@ -30,23 +31,36 @@ public class ProjectionTest {
 
 		Bson filter = Filters.or(Filters.eq("name", "nagarjuna"),Filters.gte("rating.rank", 1));
 
-		//		Bson projection = new Document("debutyear" , 1);
-
-		//		Bson projection = new Document("debutyear" , 1).append("_id", 0);
-
-		//		Bson projection = new Document("debutyear" , 1).append("name", 1).append("_id", 0);
-
-		//		Bson projection = new Document("debutyear" , 1).append("name", 1).append("_id", 0);
-
-
-		//		Bson projection = Projections.include("debutyear","name");
-
-
 		Bson projection = Projections.fields(Projections.include("debutyear","name"),Projections.exclude("_id"));
 
+		//		Bson sort = new Document().append("rating.rank", 1);
+
+		//		Bson sort = new Document().append("rating.rank", -1);
+
+		//		Bson sort = new Document().append("rating.rank", 1).append("debutyear", -1);
+
+		//		Bson sort = Sorts.ascending("rating.rank");
+
+		//		Bson sort = Sorts.descending("rating.rank");
+
+		Bson sort = Sorts.orderBy(Sorts.descending("rating.rank"),Sorts.descending("debutyear"));
+
+		/*List<Document> actors = collection.find(filter)
+				.sort(sort)
+				.projection(projection)
+				.into(new ArrayList<Document>());*/
+
+		/*List<Document> actors = collection.find(filter)
+				.projection(projection)
+				.sort(sort)
+				.limit(1)
+				.into(new ArrayList<Document>());*/
 
 		List<Document> actors = collection.find(filter)
 				.projection(projection)
+				.sort(sort)
+				.limit(1)
+				.skip(2)
 				.into(new ArrayList<Document>());
 
 		for (Iterator iterator = actors.iterator(); iterator.hasNext();) {
