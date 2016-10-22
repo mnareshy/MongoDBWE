@@ -34,7 +34,7 @@ public class InsertTest {
 		collection.insertOne(document);
 
 		JsonWritter.print(document);
-		
+
 		Document chiranjeevi = new Document().append("name", "chiranjeevi")
 				.append("debutyear", 1977)
 				.append("movies", Arrays.asList("ydmd","challange","tagore","kidi no 150"))
@@ -49,7 +49,7 @@ public class InsertTest {
 						.append("rank", 2));
 
 		collection.insertMany(Arrays.asList(chiranjeevi,nagarjuna));
-		
+
 		JsonWritter.print(chiranjeevi);
 		JsonWritter.print(nagarjuna);
 
