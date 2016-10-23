@@ -204,8 +204,9 @@ REPLACE
 	 collections: [ 82, 85, 88 ]})
 	 
 	 
-					  
-					  
+>mongoimport --drop -d actros -c ranks ranks.json
+
+
 
 
 
