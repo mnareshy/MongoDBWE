@@ -206,6 +206,17 @@ REPLACE
 	 
 >mongoimport --drop -d actros -c ranks ranks.json
 
+ARRAYS WITH EMBEDED DOCUMENTS
+
+{
+    name: "sairam",
+    items: [ {"dob":"12th Nov"}, {"surname":"muddakkagari"}, {"city":"bangalore"} ]
+}
+
+// find the document in the array matching "city":bangalore"
+
+>db.users.find( { name: "Naresh"}, { items: { $elemMatch: {"city":"bangalore"} } })
+
 
 
 
