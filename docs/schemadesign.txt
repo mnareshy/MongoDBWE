@@ -89,8 +89,17 @@ This appropriate as the the size of the collection issues and redundancy issues 
 But if the many is really few it make essence to embed in a single document!
 	
 	
+> many - many
 
+Actors -  movies
 
+{"_id": " actor name",
+ "movies: [ "movie 1"...........]}
+ 
+{"_id": " movie 1",
+ "movies: [ "actor name"...........]}
+ 
+ embedded is not suggestible, as update requires in multiple documents!
 
 
 
