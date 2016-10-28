@@ -1,0 +1,98 @@
+>Rich Documents
+>Pre Join / Embedded Documents
+>Mongo doesn't support joins natively 
+>No support of constraints , eg :foreign key constraint in RDBMS 
+>Atomic Operations, No transactional support
+>No Declared schema
+
+
+>	
+
+3rd Normal form in RDBMS
+
+Book-ID Book Name Author Name Email
+abc     B		  someOne1    s@me1.ne
+abc1    A         someOne2    s@me2.ne
+abc2    C         someOne1    s@me3.ne
+
+> Chances of duplication of data in the email address has to be taken care , there is a chance that few records might
+>miss in update , hence sometimes land in inconsistent state as shown in the table!
+
+> Goals of normalization
+
+-freeze the data base of modification anomalies 
+-minimized redesign when extending
+-avoid bias toward any particular access pattern!
+
+
+> In mongodb animosity infact let the transactions requirements.
+3 ways to look at it.
+- embed mostly in a single document, hence all the changes are taken care or none.
+- use programming languages to manage the locks !
+- tolerate the inconsistency, see if some users get the changes in delay!
+ 
+ > One - One relations
+
+- eg : actor - debutmovie
+
+actor collection  dmovie collection
+ actor_id		movie_id
+ name			name
+ debtmovie
+
+these two collections can be embedded in to one single document, considerations as follows!
+
+- frequency of changes in dmovie collection
+- growth in size of collection
+- atomicity requirement 
+
+> One - Many
+
+eg : lead actor - movies
+
+Approach 1:
+
+	{"_id":"lead actor name",
+	 "movies":["movie 1",
+	 		   "movie 2",
+	 		   
+	 		    ..... "Movie N"]
+	                  	
+		
+	}
+	
+This doesn't work because the movie array many not fit  in a single collection!
+
+
+Approach 2:
+
+	{"_id":"movie name",
+	 "lead actor" : [ actor name.....details Etc]
+	}
+	
+
+There is a problem in the approach as the lead actor details duplicates in multiple movie documents
+
+Approach 3:
+
+	
+	{"_id:movie name"
+	 "lead actor":"lead actor name"
+	}
+	
+	{"_id": "lead actor name"
+	 "details":"........etc"
+	}
+	
+This appropriate as the the size of the collection issues and redundancy issues is taken care . 
+
+But if the many is really few it make essence to embed in a single document!
+	
+	
+
+
+
+
+
+
+
