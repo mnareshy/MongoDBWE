@@ -1,0 +1,77 @@
+> Morphia is  ODM project for MONDO DB
+
+> ODM stands for Object Data Model
+> When a Java applications connects to DB its via driver, java objects maps into driver understandable forms and driver
+is responsible for taggling data back and fourth form the db.
+
+> ODM comes in between java code and the drivers, it handles the java objects with the means of generic API,
+Its helpful to keep the java code agnostic of any version change of driver syntax updates!
+
+> Counter to the above statement is that ODM uses reflection to grab the data for further operations, 
+calling driver directly will be better in terms of performance...
+
+> Few examples on usage
+
+>
+@Entity(value = "employee" , noClassnameStored = true)
+//not mandatory , but if you want the name of the collection different from the java class name use this!
+//Marphia stored the class name as metadata for the collection , noClassnameStored set to say dont store
+@Indexes({
+
+	@Index(value = "empID,-dateOfJoining", name="prime"),
+	//this is to create ascending index on empID ,descending  index on dateOfJoining
+	@Index(value = "dateOfResign", name = "clearresigned" , expireAfterSeconds=1000000)
+	//this will delete the document after the expiry seconds mentioned, this is 
+	//	usefull delete clear the records which are no longer valid
+})
+
+public class Employee {
+
+	private String empName;
+	@Id
+	private int empID;
+	//to mention the id field
+	@Property("department")
+	@Reference(lazy=true)
+	private Department dept;
+	//if the you want the collection field name is different from the java field mention using @Property
+	//@Reference lazy property is to say don't load dept when i access Employee, load it when i invoke dept
+	//@Reference can also be used to set a property in the collection rather loading it completely
+	private Date dateOfJoining;
+	private boolean isActive;
+	private Date dateOfResign;
+	private int salary;
+
+
+}
+
+>@Entity(value = "department" , noClassnameStored = true)
+
+public class Department {
+
+	private String name;
+	private int id;
+	private String desc;
+	private int noOfEmp;
+	@Indexed(value = IndexDirection.ASC, name = "" , unique = false, dropDups = false, expireAfterSeconds = -1, 
+			background = false , sparse = false)
+	private Date dateOfEstablishment;
+	//  indexes can be mentioned at the field level.
+	//  value is to set the direction , if no name mentioned it infers from field
+	//	dropDups is useful when unique is used
+	//	It says, when  you create index, it it happens to find a non-unique value in the collection as it indexing it,
+	//	just drop that particular document from collection!
+	//  if the background is false , indexes will create in the foreground, if the collection is big 
+	//	it might hold the screen for long time
+	//  sparse is used to specify that the created filed is not in all documents
+
+	@Version("v")
+	private long version;
+	// when ever Marphia saves the Department , increment this field value.
+	// if the old values was modified by the user, it error outs that it has to handled manually!
+
+}
+
+
+
+

@@ -103,5 +103,97 @@ Actors -  movies
 
 
 
+> Multi Key Indexes 
+
+> db.cinemas.insertMany([{"_id":0,"name":"bahubali","actors":[0,1,2]},
+						{"_id":1,"name":"bbmv","actors":[3,4]},
+						{"_id":2,"name":"majnu","actors":[3]},
+						{"_id":3,"name":"bahubali2","actors":[0,1,2,3]}])
+						
+						
+						
+> db.actrors.insertMany([{"_id":0,"name":"Prabhas"},
+						{"_id":1,"name":"Rana"},
+						{"_id":2,"name":"ramyakrishna"},
+						{"_id":3,"name":"nani"},
+						{"_id":4,"name":"murali sharma"}])
+						
+> db.cinemas.find({"actors":{"$all":[0,1]}}).explain()
+
+> db.cinemas.ensureIndex({"actors":1})
+
+> db.cinemas.find({"actors":{"$all":[0,1]}}).explain()
+//now the performance of query is high as it uses indexes!
+
+> Tree's
+
+representation of trees in RDBMS
+
+cellphone table
+
+id : apple iphone 6s
+os : ios
+version : 10
+category : 1
+
+
+type of produce table
+
+id : 1
+name : smart phone
+parent: mobile phones
+
+
+if the type has a hierarchy as wireless phones, electronics ...etc...  its more difficult to represent...you might end up having columns 
+as childrens
+
+representation  of trees in MONGO is much simpler
+
+{
+"_id":1,
+"name": "smart phones",
+"ancestors":[id1,id2,id3,id4]
+
+}
+
+
+
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
 
 
