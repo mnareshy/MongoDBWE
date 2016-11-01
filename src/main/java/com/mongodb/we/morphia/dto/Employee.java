@@ -8,6 +8,7 @@ import org.mongodb.morphia.annotations.Index;
 import org.mongodb.morphia.annotations.Indexes;
 import org.mongodb.morphia.annotations.Property;
 import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Version;
 
 
 @Entity(value = "employee" , noClassnameStored = true)
@@ -28,21 +29,25 @@ public class Employee {
 	@Id
 	private int empID;
 	//to mention the id field
-//	@Property("department")
+	//	@Property("department")
 	@Reference(lazy=true)
 	private Department department;
 	//if the you want the collection field name is different from the java field mention using @Property
 	//@Reference lazy property is to say don't load department when i access Employee, load it when i invoke department
 	//@Reference can also be used to set a property in the collection rather loading it completely
-	
+
+
 
 	private Date dateOfJoining;
 	private boolean isActive;
 	private Date dateOfResign;
 	private int salary;
-	
-	
-	
+
+
+	@Version
+	private int version;
+
+
 	public String getEmpName() {
 		return empName;
 	}
@@ -84,6 +89,11 @@ public class Employee {
 	}
 	public void setSalary(int salary) {
 		this.salary = salary;
+	}
+
+	public String toString()
+	{
+		return "Name :" +empName+" , empId : "+empID;
 	}
 
 
