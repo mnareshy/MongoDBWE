@@ -4,6 +4,7 @@ package com.mongodb.we.morphia.dto;
 import java.util.Date;
 
 import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Indexed;
 import org.mongodb.morphia.annotations.Version;
 import org.mongodb.morphia.utils.IndexDirection;
@@ -11,7 +12,13 @@ import org.mongodb.morphia.utils.IndexDirection;
 @Entity(value = "department" , noClassnameStored = true)
 
 public class Department {
-
+	
+	public Department(String name )
+	{
+		this.name = name;
+	}
+	
+	@Id
 	private String name;
 	private int id;
 	private String desc;
@@ -32,5 +39,53 @@ public class Department {
 	private long version;
 	// when ever Marphia saves the Department , increment this field value.
 	// if the old values was modified by the user, it error outs that it has to handled manually!
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getDesc() {
+		return desc;
+	}
+
+	public void setDesc(String desc) {
+		this.desc = desc;
+	}
+
+	public int getNoOfEmp() {
+		return noOfEmp;
+	}
+
+	public void setNoOfEmp(int noOfEmp) {
+		this.noOfEmp = noOfEmp;
+	}
+
+	public Date getDateOfEstablishment() {
+		return dateOfEstablishment;
+	}
+
+	public void setDateOfEstablishment(Date dateOfEstablishment) {
+		this.dateOfEstablishment = dateOfEstablishment;
+	}
+
+	public long getVersion() {
+		return version;
+	}
+
+	public void setVersion(long version) {
+		this.version = version;
+	}
 
 }

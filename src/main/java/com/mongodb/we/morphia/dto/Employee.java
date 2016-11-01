@@ -28,16 +28,64 @@ public class Employee {
 	@Id
 	private int empID;
 	//to mention the id field
-	@Property("department")
+//	@Property("department")
 	@Reference(lazy=true)
-	private Department dept;
+	private Department department;
 	//if the you want the collection field name is different from the java field mention using @Property
-	//@Reference lazy property is to say don't load dept when i access Employee, load it when i invoke dept
+	//@Reference lazy property is to say don't load department when i access Employee, load it when i invoke department
 	//@Reference can also be used to set a property in the collection rather loading it completely
+	
+
 	private Date dateOfJoining;
 	private boolean isActive;
 	private Date dateOfResign;
 	private int salary;
+	
+	
+	
+	public String getEmpName() {
+		return empName;
+	}
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+	public int getEmpID() {
+		return empID;
+	}
+	public void setEmpID(int empID) {
+		this.empID = empID;
+	}
+	public Department getDepartment() {
+		return department;
+	}
+	public void setDepartment(Department department) {
+		this.department = department;
+	}
+	public Date getDateOfJoining() {
+		return dateOfJoining;
+	}
+	public void setDateOfJoining(Date dateOfJoining) {
+		this.dateOfJoining = dateOfJoining;
+	}
+	public boolean isActive() {
+		return isActive;
+	}
+	public void setActive(boolean isActive) {
+		this.isActive = isActive;
+	}
+	public Date getDateOfResign() {
+		return dateOfResign;
+	}
+	public void setDateOfResign(Date dateOfResign) {
+		this.dateOfResign = dateOfResign;
+	}
+	public int getSalary() {
+		return salary;
+	}
+	public void setSalary(int salary) {
+		this.salary = salary;
+	}
+
 
 
 }
