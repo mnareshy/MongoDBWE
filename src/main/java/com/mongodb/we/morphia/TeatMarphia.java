@@ -5,7 +5,7 @@ public class TeatMarphia {
 	public static void main(String[] args) {
 		
 		
-		System.out.println("sairam 1234fdgsfdgfdss");
+		System.out.println("sairam");
 	}
 
 }
