@@ -1,0 +1,16 @@
+> Mongo offers pluggable storage engines.
+
+> Storage engine is a intermediate layer between the persistent disk and the actual mongodb server itself!
+  Mongodb server interacts with the persistent disk through storage engine. The structure of data, indexes and
+  Memory optimization decides by the storage engine. Storage engine will have control on memory, it decides
+  What to put in disk , what to put in memory and when to put in memory.
+  
+> MongoDB brings pluggable storage engines , type of storage engine brings different types of performance 
+  characteristics to MongoDb.
+  
+> There are 2 default storage engines comes with the MongoDb bundle 
+	1. MMAP(default if you don't specify anything)  2 . WILD TIGER
+	
+>  Storage engine doesn't impact the the communication between the nodes in the cluster nor the programmers API!
+
+> 
