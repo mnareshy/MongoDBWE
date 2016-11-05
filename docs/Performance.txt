@@ -67,9 +67,330 @@
 > db.movies.stats()
 
   gives the details of storage!
+  
+  
+> Indexes 
+
+> for instance if there id collection of documents like {"name":"sairam", "EmpInfo":[{},{}...]}
+	if there are more number of documents in the collection say few millions , searching for a specific document
+	 may be "name" : "xyz" is  a costly operation. documents store in disk could be with any storage engine will 
+	 not be in order. hence search is always a costly operation interms of CPU,Memory utilization!
+	 
+	 Indexes are ordered list of elements those store this physical document location on the disk. When the selected
+	 elements are in order its easy for searching something particular.
+	 
+	 MongoDB uses B-Tree for indexes. Indexes can be on one element on a document or it can be on multiple elements 
+	 in the document.
+	 
+	 if the index is on multiple elements in the  document it works for following combinations.
+	 
+	 if index is created on  a,b,c
+	  index work for searching a  , ab,  abc but not for b , c, bc . its works partially for ac as search works on 
+	  a's index and ignores c's.
+	  
+	 Indexed document insertion is a costly operation. Insertion of non indexed document is faster than indexed one, as
+	 it takes time to find the right place in B-Tree for indexing for insertion. This operation seems significant depends 
+	 on the size and number of elements indexed. Alternative approach is insert the document wit out index and create the
+	 index later on!
+	 
+	 But the greater advantage is on reads, they will much faster, if the application works on more writes and less reads
+	 you need to think if you want to index.
+	 
+	 creating indexes on many elements is  performance hit as it takes langer time for writes. and it also occupies more
+	 disk space for maintaining the indexes.
+	
+> 	Create indexes -
+	i have inserted large number of collection using java program, its in src. 
+	
+	db.actors.explain().find({"debuyear":{"$eq":2012}})
+	
+		"winningPlan" : {
+			"stage" : "COLLSCAN",
+			"filter" : {
+				"debuyear" : {
+					"$eq" : 2012
+				}
+			},
+			"direction" : "forward"
+		},
+		
+		
+	
+> db.actors.createIndex({"debutyear":1})
+	{
+		"createdCollectionAutomatically" : false,
+		"numIndexesBefore" : 1,
+		"numIndexesAfter" : 2,
+		"ok" : 1
+	}
+
+	 Which creates index on debutyear
+	 
+	 now see the difference in  - db.actors.explain().find({"debutyear":{"$eq":2012}})
+	 
+	 	"winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"debuyear" : 1
+				},
+				"indexName" : "debuyear_1",
+				"isMultiKey" : false,
+				"isUnique" : false,
+				"isSparse" : false,
+				"isPartial" : false,
+				"indexVersion" : 1,
+				"direction" : "forward",
+				"indexBounds" : {
+					"debuyear" : [
+						"[2012.0, 2012.0]"
+					]
+				}
+			}
+	 
+	 
+	 db.actors.createIndex({"debutyear":1})
+	  
+	 db.actors.explain(true).find({"debutyear":{"$eq":2012}})
+	 // this would give you number of documents examined.
+
+>     db.actors.createIndex({"debutyear":1}) can be in either direction , -1 for in reverse direction.
+
+>  Discovering Index
+
+	db.actors.getIndexes()
+	
+	[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"name" : "_id_",
+		"ns" : "test.actors"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"debuyear" : 1
+		},
+		"name" : "debuyear_1",
+		"ns" : "test.actors"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"debutyear" : 1
+		},
+		"name" : "debutyear_1",
+		"ns" : "test.actors"
+	}
+	]
+	
+   There will be default index on _id , that can not be deleted.
+   
+>  Delete index 
+	
+	db.actors.dropIndex({"debutyear":1})
+	
+	{ "nIndexesWas" : 3, "ok" : 1 }
+	
+	db.actors.getIndexes()
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"name" : "_id_",
+		"ns" : "test.actors"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"debuyear" : 1
+		},
+		"name" : "debuyear_1",
+		"ns" : "test.actors"
+	}
+	]
+
+ > Multi key indexes
+ 
+ {
+ 	"a":[1,2,3,4],
+ 	"b":3
+ }
+ 
+ if you create index on a , where mongodb will create index on 1,2,3 and 4.
+ indexes will became multikey indexes when mongodb realizes that the index is on an array of elements.
+ index can be created on a and b as a compound index. But if b is also an array then it illegal. 
+ 
+ In the same collection if you try to insert 
+ {
+ 	"a":[1,2,3,4],
+ 	"b":[3,3]
+ }
+ 
+  you will not be allowed. But still the following is allowed
+  
+   {
+ 	"a":9,
+ 	"b":[3,3]
+   }
+ 
+ 	if you create indexes on arrays 
+ 
+   - db.mk.insertOne({"i":12, "j":17})
+ 	
+   create a component index
+ 	
+   - db.mk.createIndex({"i":1, "j":1})
+ 
+   - db.mk.explain().find({i:1})
+    
+	"winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"i" : 1,
+					"j" : 1
+				},
+				"indexName" : "i_1_j_1",
+				"isMultiKey" : false,
+
+  here multikey is false.
+  
+  - db.mk.insertOne({"i":12, "j":[17]})
+  - db.mk.find()
+	{ "_id" : ObjectId("581d92c6b07263e0b7cd0bce"), "i" : 12, "j" : 17 }
+	{ "_id" : ObjectId("581d93d3b07263e0b7cd0bcf"), "i" : 12, "j" : [ 17 ] }4
+	
+  then again 
+  
+  "winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"i" : 1,
+					"j" : 1
+				},
+				"indexName" : "i_1_j_1",
+				"isMultiKey" : false,
+  
+  -  db.mk.insertOne({"i":12, "j":[17,21,24,27]})
+  "winningPlan" : {
+			"stage" : "FETCH",
+			"inputStage" : {
+				"stage" : "IXSCAN",
+				"keyPattern" : {
+					"i" : 1,
+					"j" : 1
+				},
+				"indexName" : "i_1_j_1",
+				"isMultiKey" : true,
+  
+  The moment mongodb realizes that j is array multikey became true!
+																									  
+																									  
+  - db.mk.insertOne({"i":[12], "j":[17,21,24,27]})
+  
+  {
+	"index" : 0,
+	"code" : 10088,
+	"errmsg" : "cannot index parallel arrays [j] [i]",
+	
+	Not allowed, This is weird to me as i is a single element array. When j was created as a single element array
+	mongodb did not recognize that its actually multi key index .It only recognized when j became multi element array!
+	
+  
+  - db.mk.insertOne({"i":[12,14,12], "j":[17,21,24,27]})
+  
+  This cannot be allowed
+  
+  However the following one is allowed.
+  
+  - db.mk.insertOne({"i":[12,14,12], "j":12})
+  
+  On mutlikey indexes, if there a index on 2 keys and key is array . when key 2 is inserted as a single element array MongoDb throws exception.
+  
+> Dot Notation on mulutikey
+	
+	when multikey index is create on sub documents in an array, search behaviour is not as we expect!
+	
+	Sample collection actors
+	
+	{
+	"_id" : ObjectId("581e1cdf35392a0d40a1724d"),
+	"name" : "IRHBYUROULYPYEYRWE",
+	"debutyear" : 1991,
+	"movies" : [
+		"TJYQPPHJ",
+		"XTTQPHFSTX",
+		"IZFCXONCVLZMT",
+		"GNPMMNKVJOSSTVXYYO"
+	],
+	"rating" : [
+		{
+			"ratingboard" : "national",
+			"score" : 77,
+			"rank" : 3
+		},
+		{
+			"ratingboard" : "international",
+			"score" : 64,
+			"rank" : 4
+		},
+		{
+			"ratingboard" : "state",
+			"score" : 56,
+			"rank" : 3
+		},
+		{
+			"ratingboard" : "imdb",
+			"score" : 92,
+			"rank" : 8
+		}
+	]
+	
+> create a index on rating.score
+	
+	db.actors.createIndex({"rating.score":1})
+
+> find documents where score is > 90 and rank is lessthan 4
+	
+	db.actors.find({"rating":{$elemMatch : {"score":{"$gte":90}, "rank":{"$lte":4}}}})
+
+	what it actually does is , it first looks at the indexes to to find out matching documents
+	which is all the documents where rating.score > 90 and then gives the result set to run both 
+	rank < 4 and score > 90 in one document!
+	
+	count actually got me 164338
+	
+	same query wit $and
+	
+	db.actors.find({$and:[{"rating.score":{"$gte":90}},{"rating.rank":{"$lte":4}}]})
+	
+	count 333987
+	
+	surprise! what it has done .... it actually used the indexes which is rating.score and filtered the scored > 90,
+	than passed the result set to do the other condition which is rating.rank < 4. which is in contrast with executing
+	both the conditions like in $elemMatch case.
+	
+	
+    
 
 
 
+	
+
+
+
+	
+	
 
 
 
