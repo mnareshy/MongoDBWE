@@ -13,4 +13,64 @@
 	
 >  Storage engine doesn't impact the the communication between the nodes in the cluster nor the programmers API!
 
-> 
+> MMAPv1
+
+>This storage engine uses system mmap internally.
+
+> MongoDB maps the actual file to vm , Os decides what fit in memory. 
+	In a given instance if you try to access a page, it may or may not be in memory.
+	Os decides which are to be in memory. If you try to read a document if its there in memory
+	then you will get it. If its not the OS has to bring it from disk.
+
+> MMAP storage engine offers collection level concurrency , Which is a lock at collection level.
+	each collection is a  file in the data / db. If there are multiple write operations on
+	same collection, it doesn't work. One write operation at a time on one collection. If multiple
+	write operations if different documents it works!
+
+> MongoDB allows in place updates.If it can't it movies to a location as a whole where the document
+	fits with the update!. In order to make it more likely that we can update the document in place
+	without having to move it, MMAP use power of 2 sizes when we allocate the initial storage for document.
+
+ 3 bite document -> gets 4 
+ 7 bite document -> gets 8 
+ 19 bite document -> gets 32
+ 
+> with this update in memory can be managed.
+
+> OS decides what is memory and what is in disk. 	
+
+> Wire Tiger
+
+> Not Kind of Document locking, It actually lock free optimistic concurrency model. Storage engine
+	Assumes that two writes are not going to be on the same document. If they are on the same document
+	Then one of them is unwound and has to try again, which is invisible to the actual application.
+
+> Document level locking vs. collection level locking is the advantage.
+
+> This storage engine offers compression, both of the documents themselves of the data and indexes.
+
+> WT itself manages the memory to read the file from the disk. Memory pages can be vary in size.
+	WT only decides which blocks to keep in memory and which blocks to send in disk. WT compress the data
+	when it write back to the disk, for some of the data types its huge saving.
+
+> WT append the data directly into the disk , no in-place updates offered. If you update a document which is 
+	on memory it actually writes the entire document into disk with updates, and claims the space in memory.
+	In cases like a large document update in one area WT write the entire document in to some other place in the disk.
+
+> Data that allows to run without locks at the document level and gives them the document level concurrency.
+
+> mongod -dbpath WT -storageEngine wiredTiger
+
+> WT can not read the files created by MMAP, hence create a separated directory for WT in care you want to use 
+	WT storage engine.
+
+> db.movies.stats()
+
+  gives the details of storage!
+
+
+
+
+
+
+
