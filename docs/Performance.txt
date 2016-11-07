@@ -381,13 +381,246 @@
 	both the conditions like in $elemMatch case.
 	
 	
+> UNIQUE INDEXES
+
+	unique indexes ensure that the indexed elements are unique. if there are duplicates you cannot create!
+	
+	- db.employee.createIndex({"empName":1}, {unique:true})
+	
+	if there are non unique employee name in the collection index will not be created.
+	
+	you get this error
+    {
+	"ok" : 0,
+	"errmsg" : "E11000 duplicate key error collection: test.employee index: empName_1 dup key: { : \"Emp4\" }",
+	"code" : 11000
+	}
+	
+	This is also throws same error when the key is null! so helpful when there is a typo in the key while creating
+	indexs.
+
     
+    if there are non unique elements present, index will be created successfully. Now if you try to insert document
+    with duplicate empName the following error will be thrown.
+    
+    ({
+	"index" : 0,
+	"code" : 11000,
+	"errmsg" : "E11000 duplicate key error collection: test.employee index: empName_1 dup key: { : \"Emp4\" }",
+	"op" : {
+		"_id" : ObjectId("581eac9981f5596dfb7c3112"),
+		"empName" : "Emp4"
+	}
+    })
+    
+    
+> SPARSE INDEX
 
+ db.si.insertMany([
+	{i:1,j:2,k:4},
+	{i:10,j:20,k:40},
+	{i:12,j:22},
+	{i:13,j:24}
+	])
+	
+	If you create unique index on the above collection on i or j it works , if you do that on k it wont.
+	Reason behind that is document 3,4 does not have key k. k is null in 2 documents hence its not null!
+	
+ sparse index help us indexing the documents those have k value and leave the documents those doesn't have k.
+ 
+ - db.si.createIndex({k:1},{unique:true, sparce:true})
+ 
+  this doesnt through error  unlike - db.si.createIndex({k:1},{unique:true})
+  
+ - db.si.explain().find().sort({i:1})  
+	 you see   		"inputStage" : {
+				"stage" : "IXSCAN",
+ 
+ - db.si.explain().find().sort({k:1})  
+	 you see   			"inputStage" : {
+					"stage" : "COLLSCAN",
+					
+  here it cannot use the index scan, and mangodb turned the collection scan as it know its a sparse index
+  and there might be documents with out key K.
+  
+  Hence sparse indexes wont work with sorts!
+  
+> BACKGROUND INDEX CREATION
 
+	db.actors.createIndex({"debutyear":1},{"background":true})
+	
+	this will run the index creation in the background.
+	if you run index on the foreground  , its  relatively faster but blocks other clients from reads and writes
+	on the same data base.
+	
+	if you run the index creation in the background, its little slower but wont block reads and writes from other clients!
+	
+	V 2.4 and later, you can create multiple background indexes in parallel even on the same database.
+	2.6, creating an index in the background on the primary will cause the indexes to be created in the background on secondaries, as well.
+	The secondaries will begin index creation when the primary completes building its index.
+	
+> EXPLAIN 
 
+ find(), update(), rename(), aggrigate() works with explain() but not insertOne().
+ 
+ .explain() returns explainable object.  Older  versions works with cursors.
+ 
+ new -  db.actors.explain().findOne()
+ old - db.actors.findOne().explain() this returns a cursor, this has been updated to new syntax for the following benefit 
+ 
+ db.actors.find().count().explain() doesn't work as count() doesn't return a cursor.
+ another example db.actors.remove({"name":"chiranjeevi"}).explain() which does'nt work.
+ 
+ 
+ but db.actors.explan().find().count() works fine.
+ 
+ var exp = db.actors().explain()
+ exp.help() - gives you all operation it can do!
+ 
+ var cursor = db.actors().find()
+ cursor.explain() - gives you expain
+ now call the .next() get the result -  may be the advantage of using cursor...
+ 
+ 
+> VERBOSE
+ 
+ 	explain has 3 stage of verbose!
+ 	 
+ 	 queryPlanner - default
+ 	 executionStats - this includes queryplanner as well. Give more stats on the number of docs examined ....etc
+ 	 allPlansExecution -  this includes both queryplanner and executionStats. This in-fact executes all the plans 
+ 	 in parallel and find the winning plan in contrast with what query optimizer does  periodically!
+    
+     - db.actors.find().explain()
+     - db.actors.find().explain(executionStats)
+     - db.actors.find().explain(allPlansExecution)
+     
+     
+> COVERED QUERIES
+ 
+ 	
+    The query that completely covered by indexes! in case the examined documents are less than or equal to
+    the returned documents in look at the executionStats.
+     
+     
+> CHOOSING AN INDEX
+
+	mongodb identifies the opt indexes to use for a query out of available indexes. And it runs all the plans 
+	in parallel , which one completes first is going give the results out.
+	
+	The winning query plan will be stored in the cache for the future use for the queries that shape.
+	
+	Cache will be evicted from cache in case if the threshold number of writes, or index rebuild or update in index and 
+	finally when MongoD restarts.
+
+> INDEX SIZE
+
+	generally the frequently accessed data by clients are called working set, mongoDB keeps the working sets in memory
+	because disk io is a costly operation. especially in case of indexes if you keep in disk we loose many advantages 
+	of them. Hence its essential to keep the size of index low.
+	
+	- db.actors.stats()
+	 
+	 gives you the data about storage and index size.
+	 
+	 	"nindexes" : 2,
+	"totalIndexSize" : 24137728,
+	"indexSizes" : {
+		"_id_" : 9302016,
+		"rating.score_1" : 14835712
+	},
+	 
+	 there is a shortcut method
+	 
+	 - db.adctors.totalIndexSize()
+	 
+	If you use WT storage engine , you see its compression(prefix compression) benefits on indexes, hence less 
+	memory utilization. However its on the cost of CPU.
 	
 
+> INDEX CODINOLITY
 
+	regular -    1 : 1 for every key there is a index point
+	sparse - <= documents as it skips the documents that doesn't have the key
+	multikey - > documents as it create index for every element in the array.
+	
+	If the document has 100 tags in it, and if the tags array is indexed with a multikey index, it needs 
+	100 index points  to be updated in the index to accommodate the move.
+	
+>  GEO SEPCIAL INDEXES
+
+	for example you have 4 towns and a you need to find which is close to you.
+	MongoDb come with geo special indexes for this kind of problems  and what you need is
+	
+	an array of 2 elements name something like coordinates, location... your name:)
+	
+	and 
+	
+	- ensureIndex({"coordinates":"2d"})
+	
+	2d is a reserved word,  which tells mongodb that it 2d index. you can have compound index just in case if you have
+	type of document as "city" , "town" ..etc
+	
+	
+	- ensureIndex({"coordinates":"2d", "type":1})
+	
+	now issue the find command
+	
+	- db.places.find({"coordinates":{"$near":[77,-77]}})
+	
+	its gives you places close to you in increasing order.
+	
+	general practice is to use this with limit
+	
+	- db.places.find({"coordinates":{"$near":[77,-77]}}).limit(2)
+	
+	try this
+	
+	- db.places.insertMany([
+	{"name":"bangalore", "type":"city" , "coordinates":[71,67]},
+	{"name":"madanapalle", "type":"town" , "coordinates":[71,47]},
+	{"name":"tirupathi", "type":"city" , "coordinates":[80,33]},
+	{"name":"kalahasti", "type":"town" , "coordinates":[47,67]},
+	{"name":"mysore", "type":"city" , "coordinates":[78,92]},
+	{"name":"mangalore", "type":"city" , "coordinates":[55,67]},
+	{"name":"punganur", "type":"town" , "coordinates":[71,77]},
+	{"name":"kolar", "type":"town" , "coordinates":[24,67]},
+	{"name":"chittoor", "type":"town" , "coordinates":[71,99]},
+	{"name":"chintamani", "type":"town" , "coordinates":[63,67]},
+	{"name":"hoskote", "type":"town" , "coordinates":[33,67]}
+							])
+							
+	- db.places.ensureIndex({"coordinates":"2d", "type":1})
+	
+	- db.places.find({"coordinates":{"$near":[77,-77]}}).limit(2)
+	
+		db.places.find({"coordinates":{"$near":[77,-77]}}).limit(2).pretty()
+	{
+		"_id" : ObjectId("5820049d2fab980ce1d2681b"),
+		"name" : "tirupathi",
+		"type" : "city",
+		"coordinates" : [
+			80,
+			33
+		]
+	}
+	{
+		"_id" : ObjectId("5820049d2fab980ce1d2681a"),
+		"name" : "madanapalle",
+		"type" : "town",
+		"coordinates" : [
+			71,
+			47
+		]
+	}
+	
+> 
+	
+	
+	
+	
+	
+	
 
 	
 	
