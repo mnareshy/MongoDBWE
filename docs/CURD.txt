@@ -194,7 +194,7 @@ UPDATE MANY
 					  {"$set":{"rating.rank":0}})
 
 
-UPSERT
+UPSERT 
 
 >db.movies.updateMany({"_id":cinema._id},
 					  {"$set":cinema},
@@ -221,6 +221,7 @@ ARRAYS WITH EMBEDED DOCUMENTS
 >db.users.find( { name: "Naresh"}, { items: { $elemMatch: {"city":"bangalore"} } })
 
 
+
 REMOVE DOC
 
 >db.users.remove({ name: "Naresh"})
@@ -230,10 +231,6 @@ if you have multiple documents of same name and want to remove only one
 >db.users.remove({ name: "Naresh"}, {justOne:true})
 
 this command will actually removes the older one.
-
-
-
-
 
 
 

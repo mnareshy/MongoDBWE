@@ -66,6 +66,8 @@
 
 > db.movies.stats()
 
+> db.serverStatus().storageEngine
+
   gives the details of storage!
   
   
@@ -614,7 +616,196 @@
 		]
 	}
 	
-> 
+> GEO SEPCIAL SPHERICAL INDEXES
+
+	on earth to position any location we need longitude and latitude.
+	
+	longitude - longitude refers to the imaginary lines that bisect the globe through the North and South Poles (the ones that run vertically
+	latitude -  is a geographic coordinate that specifies the north–south
+				position of a point on the Earth's surface. Latitude is an angle (defined below) which ranges from 0° at the 
+				Equator to 90° (North or South) at the poles.
+				
+	
+	
+	- db.places.insertMany([{"name":"bangalore", "city":"bangalore", "location":{ "type":"Point","coordinates":[76.900919,12.985454]},"type":"city"},
+	{"name":"madanapalle", "city":"madanapalle" , "location":{"type":"Point","coordinates":[78.503606,13.560349]},"type":"town"},
+	{"name":"tirupathi","city":"tirupathi" , "location":{"type":"Point","coordinates":[79.419179,13.628756]},"type":"city"},
+	{"name":"kalahasti", "city":"kalahasti" , "location":{"type":"Point","coordinates":[77.518229,13.044743]},"type":"town"}, 
+	{"name":"mysore","city":"mysore" , "location":{"type":"Point","coordinates":[76.639381,12.295810]},"type":"city"},
+	{"name":"mangalore","city":"mangalore" , "location":{"type":"Point","coordinates":[74.855957,12.914142]},"type":"city"},
+	{"name":"punganur", "city":"punganur","type":"town" , "location":{"type":"Point","coordinates":[78.575014,13.365920]}},
+	{"name":"kolar", "city":"kolar", "location":{"type":"Point","coordinates":[78.132561,13.135745]},"type":"town" },
+	{"name":"chittoor", "city":"chittoor","type":"town" , "location":{"type":"Point","coordinates":[79.100329,13.217176]},"type":"town"},
+	{"name":"chintamani", "city":"chintamani" , "location":{"type":"Point","coordinates":[78.055138,13.401969]},"type":"town"},
+	{"name":"mandya", "city":"mandya" , "location":{"type":"Point",	"coordinates":[76.900919,12.522157]},"type":"town"}])
+	
+	the sub document in the above collection is a specification form geoJson.org 
+	
+	location":{"type":"point",
+		"coordinates":[76.900919,12.522157]
+		}
+	
+    issue the index on the location 
+   
+	- db.places.ensureIndex({"location":"2dsphere"})						
+	
+	
+	However the below command search the closet location
+		
+	- db.places.find({location:{$near:{	$geometry:{	type:"Point",coordinates:[76.900919,12.985454]},$maxDistance:2000}}}) 
+	
+	This is working as not expected! will find out...   TBD
+	another sample:
+	- db.stores.find({"loc":{$near:{"$geometry":{"type":"Point","coordinates":[-130,39]},$maxDistance: 1000000}}})
+
+
+> TEXT INDEX
+
+	if there is a text on the key and if you want to search for that you need to pass entire text , otherwise it wont work.
+	
+	for example if you have a data set like
+	
+	- db.awards.insertMany([
+	{name:"saran", awards:" saran got applause and standing ovation" },
+	{name:"akshatha" , awards: "akshatha got  standing ovation "},
+	{name:"lakkam" , awards:" lakkam became AM " },
+	{name:"rama", awards:" rama got 270 applause points "}
+	])
+	
+	search for the employess those got applause
+	
+	- db.awards.find({"awards":"applause"}) 
+	
+	this doesnt work, you need to pass the complete words to match a document. 
+	
+	create index on the text
+	
+	- db.awards.ensureIndex({"awards":"text"})
+	
+	now search for a word
+	
+	- db.awards.find({"$text":{"$search":"applause"}})
+	
+	this works for the text search in the document!
+	
+	- db.awards.find({"$text":{"$search":"lakkam AM applause"}}).pretty()
+	
+	gives 
+	
+	{
+	"_id" : ObjectId("5820b904e4f9cc0aeae37f42"),
+	"name" : "lakkam",
+		"awards" : " lakkam became AM "
+	}
+	{
+		"_id" : ObjectId("5820b904e4f9cc0aeae37f40"),
+		"name" : "saran",
+		"awards" : " saran got applause and standing ovation"
+	}
+	{
+		"_id" : ObjectId("5820b904e4f9cc0aeae37f43"),
+		"name" : "rama",
+		"awards" : " rama got 270 applause points "
+	}
+	
+	
+	Now to find out how good it matches the search string 
+	
+	
+	- db.awards.find({"$text":{"$search":" saran applause"}},{"score":{"$meta":"textScore"}}).sort({"score":{"$meta":"textScore"}}).pretty()
+	
+	
+	we have projected the textScore and then sorted based on the textScore. 
+	
+
+> DESIGN AND USING INDEXES
+
+	- selectivity of the index 
+	- think on sorts
+	
+	for selectivity of index , in case query planner scans lot more than the returned documents then think of selecting the appropriate index
+	which infact override the query planner index.
+	
+	- db.actors.find({"debutyear":{"$gte":1997}}).limit(12).sort({"debutyear":-1}).hint({"debutyear":1})
+	
+	Few thumb rules to follow
+	
+	1 equity fields before range fields
+	2 sort fields before range fields
+	3 equity fields before sort fields
+	
+	 
+>  PROFILING AND SLOW QUERIES
+
+	MONGOD presents the slow query log which take more than 100sects on the console.
+	
+	if you enable profile it wirtes the data on 	system.profiles
+	
+	there are 3 levels of profiling
+	
+	0 - no profiling
+	1 - log slow queries
+	2 - log all queries
+	
+	
+	Enable profiling
+	
+	- mongod -dbpath /usr/.. --profile 1 --slowms 2
+	
+	Profiling level set to 1 and this is going to capture any query which take more than 2sec for execution.
+	
+	on mongo shell you can find the profile log
+	
+	- db.system.profile.find();
+	
+	you can use any operator to filter desired results.
+	
+	- db.getProfilingStatus() - gives the profile status
+	- db.getProfilingLevel()
+	- db.setProfilingLevel(1,4)  -  this sets the profiling level 1 and slowms to 4
+	
+	query to look in the system profile collection for all queries that took longer than one second, ordered by timestamp descending.
+	
+    - db.system.profile.find({"millis":{"$gt":1000}}).sort({"ts":-1}) 
+	
+> MONGOTOP
+
+	which is written based on unix top command
+	
+	- mongotop 3 - which give toplevel monitoring data on mongo server on where its actually spending more time for every 3 seconds.
+	
+	
+
+
+> MONGOSTAT
+
+	mongostat is built on top of unix iostat command
+	
+	- mongostat --port
+	
+	mongostat gives detail information on the ongoing operations , memory ...etc in detail for every 1s sec. It shows the staths for both
+	 WT and MMAP storage engines.
+	 
+	 
+	 
+> SHARDING
+
+	Sharding is a technique in putting large collection among multiple servers. 
+	
+	In realword with the large data you dont get desired performance with single server. Hence Shard.
+	
+	IN sharding there will be multiple mongoservers (mongod's) and each mongo server is a shard. with in shard there could be
+	 multiple mongod's which are know as replicas. This is useful when the running server gets into passive state!
+	 
+	There is something called mangos which works a router between the application and shards. Applictaion always talks to mongos
+	 and it mongos job to communicate with appropriate shard.
+	 
+	mongos identifies the shard in which it anticipates the query data resides in , based on a shard key. Hence for the better 
+	 performance client has to send the shard key aswell! if not mongod broadcast the query to all server and it actually loosing the advantage.
+	
+	
+	
+	
 	
 	
 	
