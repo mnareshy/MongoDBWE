@@ -22,7 +22,10 @@ INSERT
 //if the "ordered":false , it will still continue to insert other records! 
 
 // Mongo Db creates the Object ID if we dongt supply , and the format as follows
-// Date-MAC Address-PID-counter    its a 12 digit hex string(4-3-2-3 bytes respectively)	 
+// Date-MAC Address-PID-counter    its a 12 digit hex string(4-3-2-3 bytes respectively)	
+
+
+// The _id can have a document it self as a value. 
 	 
 DELETE
 

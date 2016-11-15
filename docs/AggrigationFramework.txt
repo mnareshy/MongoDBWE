@@ -1,0 +1,634 @@
+If you have  a movie db as follows
+
+> movie 			year 			director				 producer 
+	bahubali		2014			ss rajamouli		shobu yarlagadda
+	bahubali2		2017			ss rajamouli		shobu yarlagadda
+	oopiri			2016			Vamsi Paidipally	PVP Cinema
+	Srimanthudu		2015			Koratala Siva		Mahesh Babu
+	Janatha Garage	2016			Koratala Siva		Mythry movie makers
+	Temper			2015			Puri Jagannadh		Bandla Ganesh
+	
+	
+
+Just for an instance in RDBMS, If you want to get the number of movies by the director ?
+
+ - select director, count(*) from movies group by movies  
+ 
+ which is a typical query in RDBMS to find the count by director
+ 
+ it would give the results as 
+ 
+ ss rajamouli 2
+ Vamsi Paidipally 1
+ Koratala Siva 2
+ Puri Jagannadh 1
+ 
+ how would it work in MongoDB
+ 
+ >	db.movies.insertMany([{"name":"bahubali","year":2014 ,"director":"ss rajamouli", "producer": "shobu yarlagadda"},
+ {"name":"bahubali2","year":2017 ,"director":"ss rajamouli", "producer": "shobu yarlagadda"},
+ {"name":"oopiri","year":2014 ,"director":"Vamsi Paidipally", "producer": "PVP Cinema"},
+ {"name":"Srimanthudu","year":2015 ,"director":"Koratala Siva", "producer": "Mahesh Babu"},
+ {"name":"Janatha Garage","year":2016 ,"director":"Koratala Siva", "producer": "Mythry movie makers"},
+ {"name":"Temper","year":2015 ,"director":"Puri Jagannadh", "producer": "Bandla Ganesh"}])
+	
+ Now in MongoDB how would you select movies by director?
+ 
+ 
+> db.movies.aggregate([
+	{"$group":
+		{
+		"_id":"$director", 
+		"Num_Movies":{"$sum":1}
+		}
+	}
+	])	
+	
+	ensure that the field is in quotes and wit $ prefix!
+	
+	what you get
+	
+	{ "_id" : "Puri Jagannadh", "Num_Movies" : 1 }
+	{ "_id" : "Koratala Siva", "Num_Movies" : 2 }
+	{ "_id" : "Vamsi Paidipally", "Num_Movies" : 1 }
+	{ "_id" : "ss rajamouli", "Num_Movies" : 2 }
+	
+> Aggregation framework used pipelines which are very similar to unix pipes
+
+	 A collection gets through sequence of pipes to get the result. For instance following stages
+	 
+	 
+	 Collection ->   $project -> $match -> $group -> $sort -> result
+	 
+	 Hence you see the a array in the aggregate signature.
+	 
+	 Stage in the pipeline is not necessarily be in order and you dont have to have all the stages and 
+	 interestingly you might repete them.
+	 
+	 $Project	- reshapes the document, potentially brings the inner level documents to top . This in infact 
+	 				 exudes the number documents that it process so the ratio is 1:1.
+	 			 
+	 $match		- This is a filter, bacially used to get the only data that need for next stages. By nature 
+	 				the processing ratio is n:1.
+	 				
+	 $group		- The core aggregator.processing ratio is n:1.
+	 
+	 $sort		- to sort. processing ratio is n:1.
+	 
+	 
+	 You can use $skip and $limit operators to see only desired data.
+	 
+	 There is another special operator $unwind which basically normalizes the data, just for an instance consider
+	 the following array
+	 
+	 tags : [movie, video, cinema, picture] $unwind normalizes the data in a fasion that you will have 3 documents
+	 
+	 one with 	tag : movie
+	 	and	    tag : video
+	 	and		tag	: cinema
+	 	and		tag : picture
+	 	
+	  processing ratio is 1:n.
+	  
+	  Normally output gets into a cursor for further processing. if you want to get the result into a collection
+	  
+	  $out - a name that the collection should get the results! processing ratio is 1:1.
+	  
+
+>	going back to the original collection while execution 
+	
+	 $group operator running through the documents and creating a result set with new documents.
+	 
+	 In the example it got director "Puri Jagannadh" first and looked into collection , since there is no document 
+	 with this id it has created it. this processing is very similar to upsert!. then it found "Koratala Siva"  and
+	 took another upsert. Third document when it encounters "Koratala Siva" again , ths time it know that the sum is
+	 already 1 and it it increments by 1. This is update...
+	 
+>	how would you make _id meaningful?
+
+	in the previous example result set you see { "_id" : "Puri Jagannadh", "Num_Movies" : 1 } as document.
+	
+	this does not really state what is the the value of _id mean?
+	
+	now reforming the same aggrigator
+	
+	- db.movies.aggregate([
+		{"$group":
+			{
+			"_id":{"director":"$director"}, 
+			"Num_Movies":{"$sum":1}
+			}
+		}
+		])	
+		
+	result set
+	
+	{ "_id" : { "director" : "Puri Jagannadh" }, "Num_Movies" : 1 }
+	{ "_id" : { "director" : "Koratala Siva" }, "Num_Movies" : 2 }
+	{ "_id" : { "director" : "Vamsi Paidipally" }, "Num_Movies" : 1 }
+	{ "_id" : { "director" : "ss rajamouli" }, "Num_Movies" : 2 }
+	
+	the difference is _id is meaningful document instead of value.
+	
+	Keys that we give in the document are arbitrary , that does not make a difference. Instead of director you can
+	call it as "dire" , just that the key changes in the result set.
+	
+	
+> COMPOUND GROUPING
+
+	what if if we want to aggregate the movies by director and producer
+	
+	
+	- db.movies.aggregate([
+		{"$group":
+			{
+			"_id":{"director":"$director", "producer":"$producer"}, 
+			"Num_Movies":{"$sum":1}
+			}
+		}
+		])	
+		
+		result set 
+			
+		{ "_id" : { "director" : "Puri Jagannadh", "producer" : "Bandla Ganesh" }, "Num_Movies" : 1 }
+		{ "_id" : { "director" : "ss rajamouli", "producer" : "shobu yarlagadda" }, "Num_Movies" : 2 }
+		{ "_id" : { "director" : "Vamsi Paidipally", "producer" : "PVP Cinema" }, "Num_Movies" : 1 }
+		{ "_id" : { "director" : "Koratala Siva", "producer" : "Mahesh Babu" }, "Num_Movies" : 1 }
+		{ "_id" : { "director" : "Koratala Siva", "producer" : "Mythry movie makers" }, "Num_Movies" : 1 }
+		
+>	Expressions available during the aggregation stage which is $group
+
+	$sum	 -  counts, adds the value specified to the key value
+	$avg	 -	averages the values of the key across documents
+	$min	 -  minimum of the values of the key across documents
+	$max	 -  maximum of the values of the key across documents
+	
+	$push		 -	to create arrays in the result set
+	$addtoset 	 -	works similar to $push but ensures unique values
+	
+	$first and $last  first value for the key and last value for the key, you need to sort the documents before 
+						performing these documents. If you do not sort they are arbitrary.
+	 
+> 	$sum
+
+	lets update the data set
+	
+	- db.movies.updateMany({},{"$set":{"collection":2000}})
+	
+	now sum all the collection per director?
+	
+	- db.movies.aggregate([
+		{
+		"$group":{
+		"_id":"$director",
+		"sum_collection":{"$sum":"$collection"}}
+		}])
+		
+		
+		
+>   $avg
+
+	find the avg collection per director
+	
+	- db.movies.updateMany({},{"$set":{"collection":2000}})
+	
+	now sum all the collection per director?
+	
+	- db.movies.aggregate([
+		{
+		"$group":{
+		"_id":"$director",
+		"avg_collection":{"$avg":"$collection"}}
+		}])
+	
+	
+> 	$addToSet
+
+	if you want find movies per director, this is a useful expression.
+	
+	- db.movies.aggregate([
+		{
+		"$group":{
+		"_id":"$director",
+		"movies":{"$addToSet":"$name"}}
+		}])
+	 
+	 result set
+	  
+	  { "_id" : "Puri Jagannadh", "movies" : [ "Temper" ] }
+	  { "_id" : "Koratala Siva", "movies" : [ "Janatha Garage", "Srimanthudu" ] }
+	  { "_id" : "Vamsi Paidipally", "movies" : [ "oopiri" ] }
+	  { "_id" : "ss rajamouli", "movies" : [ "bahubali2", "bahubali" ] }
+	  
+	  
+	  it in-fact created a movies array and added the movies per director into array. 
+	  Note this maintains unique elements in the array.
+	  
+>	$push
+
+	works very similar to $addToSet and the difference is $push does not support uniqueness.
+	
+	- db.movies.aggregate([
+		{
+		"$group":{
+		"_id":"$director",
+		"movies":{"$push":"$name"}}
+		}])
+	  
+>	$min and $max
+
+	to find min and max value in a group
+	
+	- db.movies.aggregate([{"$group":
+		{
+		"_id":"$director",
+		"max_collection":{"$max":"$collection"}		
+		}
+	  }])
+	  
+	 - db.movies.aggregate([{"$group":
+		{
+		"_id":"$name",
+		"min_collection":{"$min":"$collection"}	
+		}
+	  }])
+	  
+	 If you notice the limitation in the first query is , not sure for which movie the max collectioin is, same
+	 with the second query not sure for which director.
+
+
+>	DOUBLE GROUPING
+
+	You can a particular aggregation state more than once! You can group more than once.
+	
+	 just for instance consider the following dataset
+	
+	 
+	 >	db.movies.insertMany([{"name":"bahubali","year":2014 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"nijam","collection":4000},
+	 {"name":"bahubali","year":2014 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"andhra","collection":2000},
+	 {"name":"bahubali2","year":2017 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"nijam","collection":7000},
+	  {"name":"bahubali2","year":2017 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"andhra","collection":2000},
+	 {"name":"oopiri","year":2014 ,"director":"Vamsi Paidipally",
+	 "producer": "PVP Cinema","area":"andhra","collection":9000},
+	 {"name":"oopiri","year":2014 ,"director":"Vamsi Paidipally",
+	 "producer": "PVP Cinema","area":"nijam","collection":7000},
+	 {"name":"Srimanthudu","year":2015 ,"director":"Koratala Siva",
+	 "producer": "Mahesh Babu","area":"andhra","collection":8000},
+	 {"name":"Srimanthudu","year":2015 ,"director":"Koratala Siva",
+	 "producer": "Mahesh Babu","area":"nijam","collection":2000},
+	 {"name":"Janatha Garage","year":2016 ,"director":"Koratala Siva",
+	 "producer": "Mythry movie makers","area":"andhra","collection":8000},
+	  {"name":"Janatha Garage","year":2016 ,"director":"Koratala Siva",
+	 "producer": "Mythry movie makers","area":"nijam","collection":2900},
+	 {"name":"Temper","year":2015 ,"director":"Puri Jagannadh",
+	 "producer": "Bandla Ganesh","area":"andhra","collection":3000},
+	  {"name":"Temper","year":2015 ,"director":"Puri Jagannadh",
+	 "producer": "Bandla Ganesh","area":"nijam","collection":6000}])
+	 	
+			
+ 		
+   - now in the data set if you want to get the avg collection per area and per director, its tricky.
+   you have to first group director and area and average the collections . then in the resultset data set
+   you need to average the collection.
+   
+   - db.movies.aggregate([{"$group":{"_id":{director:"$director","area":"$area"},
+   "average_by_area":{"$avg":"$collection"}}}])
+   
+   result set - of grouping 1
+   
+   - { "_id" : { "director" : "Puri Jagannadh", "area" : "andhra" }, "average_by_area" : 3000 }
+	{ "_id" : { "director" : "Koratala Siva", "area" : "nijam" }, "average_by_area" : 2450 }
+	{ "_id" : { "director" : "Puri Jagannadh", "area" : "nijam" }, "average_by_area" : 6000 }
+	{ "_id" : { "director" : "ss rajamouli", "area" : "nijam" }, "average_by_area" : 5500 }
+	{ "_id" : { "director" : "ss rajamouli", "area" : "andhra" }, "average_by_area" : 2000 }
+	{ "_id" : { "director" : "Vamsi Paidipally", "area" : "andhra" }, "average_by_area" : 9000 }
+	{ "_id" : { "director" : "Koratala Siva", "area" : "andhra" }, "average_by_area" : 8000 }
+	{ "_id" : { "director" : "Vamsi Paidipally", "area" : "nijam" }, "average_by_area" : 7000 }
+	
+	now form a double group to find the average by director
+	
+	- db.movies.aggregate([{"$group":{"_id":{director:"$director","area":"$area"},
+    "average_by_area":{"$avg":"$collection"}}},
+    {"$group":{"_id":"$_id.director",average:{"$avg":"$average_by_area"}}}])
+    
+    notice the second query, where the _id  and value of $avg used from the first query references.
+    
+    result set
+    
+    - { "_id" : "Vamsi Paidipally", "average" : 8000 }
+	{ "_id" : "ss rajamouli", "average" : 3750 }
+	{ "_id" : "Koratala Siva", "average" : 5225 }
+	{ "_id" : "Puri Jagannadh", "average" : 4500 }
+	
+	
+
+>  PROJECTION
+
+	one of the stages of aggregation, can project the document into different shape.
+	
+	just in case if you want to project the movies collection  into name as "movie" and area and collection 
+	as a sub document , with out _id.
+	
+	- db.movies.aggregate([{"$project":{
+	"_id":0,
+	"movie":{"$name"},
+	"collection":{"area":"$area",
+					"collection":"$collection"}
+	}}]) 
+	
+	
+	if you want to project movie in upper - "movie":{"$name"} to "movie":{"$toUpper":"$name"}
+	
+	if you want to project an element as it is keep 1 as value -"area":"$area" is same as "area":1.
+	
+	resultset
+	
+	- { "collection" : { "area" : "nijam", "collection" : 4000 }, "movie" : "bahubali" }
+	{ "collection" : { "area" : "andhra", "collection" : 2000 }, "movie" : "bahubali" }
+	{ "collection" : { "area" : "nijam", "collection" : 7000 }, "movie" : "bahubali2" }
+	{ "collection" : { "area" : "andhra", "collection" : 2000 }, "movie" : "bahubali2" }
+	{ "collection" : { "area" : "andhra", "collection" : 9000 }, "movie" : "oopiri" }
+	{ "collection" : { "area" : "nijam", "collection" : 7000 }, "movie" : "oopiri" }
+	{ "collection" : { "area" : "andhra", "collection" : 8000 }, "movie" : "Srimanthudu" }
+	{ "collection" : { "area" : "nijam", "collection" : 2000 }, "movie" : "Srimanthudu" }
+	{ "collection" : { "area" : "andhra", "collection" : 8000 }, "movie" : "Janatha Garage" }
+	{ "collection" : { "area" : "nijam", "collection" : 2900 }, "movie" : "Janatha Garage" }
+	{ "collection" : { "area" : "andhra", "collection" : 3000 }, "movie" : "Temper" }
+	{ "collection" : { "area" : "nijam", "collection" : 6000 }, "movie" : "Temper" }
+		
+   
+>  $match
+
+	one of the stages in pipeline of aggregation
+	
+	let try to do filter the movie collection  for the details of andhra alone...
+	
+	- db.movies.aggregate([{"$match":{"area":"andhra"}}])
+	
+	{ "_id" : ObjectId("582923d871305d3a5849a74c"), "name" : "bahubali", "year" : 2014, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "andhra", "collection" : 2000 }
+	{ "_id" : ObjectId("582923d871305d3a5849a74e"), "name" : "bahubali2", "year" : 2017, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "andhra", "collection" : 2000 }
+	{ "_id" : ObjectId("582923d871305d3a5849a74f"), "name" : "oopiri", "year" : 2014, "director" : "Vamsi Paidipally", "producer" : "PVP Cinema", "area" : "andhra", "collection" : 9000 }
+	{ "_id" : ObjectId("582923d871305d3a5849a751"), "name" : "Srimanthudu", "year" : 2015, "director" : "Koratala Siva", "producer" : "Mahesh Babu", "area" : "andhra", "collection" : 8000 }
+	{ "_id" : ObjectId("582923d871305d3a5849a753"), "name" : "Janatha Garage", "year" : 2016, "director" : "Koratala Siva", "producer" : "Mythry movie makers", "area" : "andhra", "collection" : 8000 }
+	{ "_id" : ObjectId("582923d871305d3a5849a755"), "name" : "Temper", "year" : 2015, "director" : "Puri Jagannadh", "producer" : "Bandla Ganesh", "area" : "andhra", "collection" : 3000 }
+	
+	
+	now you have the data only for andhra, if you want to sum the collection by director and  get list of movies
+	add the $group to the pipeline.
+	
+	 - db.movies.aggregate([{"$match":{"area":"andhra"}},
+	 	{"$group":{"_id":"$director","collection":{"$sum":"$collection"},"movies":{"$addToSet":"$name"}}}])
+	
+	result set
+	
+	{ "_id" : "Puri Jagannadh", "collection" : 3000, "movies" : [ "Temper" ] }
+	{ "_id" : "Koratala Siva", "collection" : 16000, "movies" : [ "Janatha Garage", "Srimanthudu" ] }
+	{ "_id" : "Vamsi Paidipally", "collection" : 9000, "movies" : [ "oopiri" ] }
+	{ "_id" : "ss rajamouli", "collection" : 4000, "movies" : [ "bahubali2", "bahubali" ] }
+	
+	now result set containing the director name on _id does not make much scence.
+	add $project to the pipeline to make the result set meaningful.
+	
+	
+	- db.movies.aggregate([{"$match":{"area":"andhra"}},
+	 	{"$group":{"_id":"$director","collection":{"$sum":"$collection"},"movies":{"$addToSet":"$name"}}},
+	 	{"$project":{"_id":0,"director":"$_id","collection":1,"movies":1}}])
+	 	
+	 resultset
+	 
+	- { "collection" : 3000, "movies" : [ "Temper" ], "director" : "Puri Jagannadh" }
+	{ "collection" : 16000, "movies" : [ "Janatha Garage", "Srimanthudu" ], "director" : "Koratala Siva" }
+	{ "collection" : 9000, "movies" : [ "oopiri" ], "director" : "Vamsi Paidipally" }
+	{ "collection" : 4000, "movies" : [ "bahubali2", "bahubali" ], "director" : "ss rajamouli" }
+	
+	note that the order of the elements in the collection is not guaranteed. 
+	
+>	$sort
+	
+	mongodb support both disk and memory sorting. By default mongodb used memory based sorting, and the 
+	default limit is 100mb.
+	
+	$sort can be performed before and after $group!
+	
+	lets try to sort the move collection by the total collection which we have developed in $match.
+	add $sort to the pipeline ...
+	
+	- db.movies.aggregate([{"$match":{"area":"andhra"}},
+	 	{"$group":{"_id":"$director","collection":{"$sum":"$collection"},"movies":{"$addToSet":"$name"}}},
+	 	{"$project":{"_id":0,"director":"$_id","collection":1,"movies":1}},
+	 	{"$sort":{"collection":1}}])
+	 	
+	 result set
+	 	
+	- { "collection" : 3000, "movies" : [ "Temper" ], "director" : "Puri Jagannadh" }
+	{ "collection" : 4000, "movies" : [ "bahubali2", "bahubali" ], "director" : "ss rajamouli" }
+	{ "collection" : 9000, "movies" : [ "oopiri" ], "director" : "Vamsi Paidipally" }
+	{ "collection" : 16000, "movies" : [ "Janatha Garage", "Srimanthudu" ], "director" : "Koratala Siva" }
+	
+	here you found the "Koratala Siva" has the highest collections! however this is a fake data for our learning
+    purpose.
+    
+>  $skip and $limit
+	
+	if you know there the will be 4 documents after staged that we have performed in $match and $sort.
+	if you want to get only the last one in the result set.
+	
+	- db.movies.aggregate([{"$match":{"area":"andhra"}},
+	 	{"$group":{"_id":"$director","collection":{"$sum":"$collection"},"movies":{"$addToSet":"$name"}}},
+	 	{"$project":{"_id":0,"director":"$_id","collection":1,"movies":1}},
+	 	{"$sort":{"collection":1}},
+	 	{"$skip":3},
+	 	{"$limit":1}])
+	 	
+	 reult set
+	 
+	 - { "collection" : 16000, "movies" : [ "Janatha Garage", "Srimanthudu" ], "director" : "Koratala Siva" }
+	 
+	 even if you leave $limit , you get the same result as there were 4 records after $sort stage.
+	 
+
+>	$first and $last
+
+	these operators make sence if you order them. 
+	
+	just for instance find the highest collection movie for every director per movie
+	
+	- db.movies.aggregate([{"$group":{"_id":{director:"$director","movie":"$name"},
+   	"HighestCOl_by_movie":{"$max":"$collection"}}}])
+   	
+   	result set
+   	
+   - { "_id" : { "director" : "Puri Jagannadh", "movie" : "Temper" }, "HighestCOl_by_movie" : 6000 }
+	{ "_id" : { "director" : "Koratala Siva", "movie" : "Janatha Garage" }, "HighestCOl_by_movie" : 8000 }
+	{ "_id" : { "director" : "ss rajamouli", "movie" : "bahubali" }, "HighestCOl_by_movie" : 4000 }
+	{ "_id" : { "director" : "Vamsi Paidipally", "movie" : "oopiri" }, "HighestCOl_by_movie" : 9000 }
+	{ "_id" : { "director" : "ss rajamouli", "movie" : "bahubali2" }, "HighestCOl_by_movie" : 7000 }
+	{ "_id" : { "director" : "Koratala Siva", "movie" : "Srimanthudu" }, "HighestCOl_by_movie" : 8000 }
+	 
+	now find the highest collection movie per director, note to do that you need to sort first.
+	
+	- db.movies.aggregate([{"$group":{"_id":{director:"$director","movie":"$name"},
+   	"HighestCOl_by_movie":{"$max":"$collection"}}},
+   	{"$sort":{"HighestCOl_by_movie":-1}}])
+   	
+   	result set
+   	-{ "_id" : { "director" : "Vamsi Paidipally", "movie" : "oopiri" }, "HighestCOl_by_movie" : 9000 }
+	{ "_id" : { "director" : "Koratala Siva", "movie" : "Janatha Garage" }, "HighestCOl_by_movie" : 8000 }
+	{ "_id" : { "director" : "Koratala Siva", "movie" : "Srimanthudu" }, "HighestCOl_by_movie" : 8000 }
+	{ "_id" : { "director" : "ss rajamouli", "movie" : "bahubali2" }, "HighestCOl_by_movie" : 7000 }
+	{ "_id" : { "director" : "Puri Jagannadh", "movie" : "Temper" }, "HighestCOl_by_movie" : 6000 }
+	{ "_id" : { "director" : "ss rajamouli", "movie" : "bahubali" }, "HighestCOl_by_movie" : 4000 }
+
+	
+	after sort you find the director is not in order
+	
+	- db.movies.aggregate([{"$group":{"_id":{director:"$director","movie":"$name"},
+   	"HighestCOl_by_movie":{"$max":"$collection"}}},
+   	{"$sort":{"HighestCOl_by_movie":-1}},
+   	{"$group":{"_id":"$_id.director","movie":{"$first":"$_id.movie"},"collection":{"$first":"$HighestCOl_by_movie"}}}])
+	
+   	here the final result set
+   	
+   	-{ "_id" : "ss rajamouli", "movie" : "bahubali2", "collection" : 7000 }
+	{ "_id" : "Puri Jagannadh", "movie" : "Temper", "collection" : 6000 }
+	{ "_id" : "Koratala Siva", "movie" : "Janatha Garage", "collection" : 8000 }
+	{ "_id" : "Vamsi Paidipally", "movie" : "oopiri", "collection" : 9000 }
+	
+	you can project _id as director if you want!
+	
+> 	$UNWIND
+
+	unwinds the array into multiple documents
+	
+	add genre to the movies in movie collection
+	
+	>	db.movies.insertMany([{"name":"bahubali","year":2014 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"nijam","collection":4000,
+	 "tags":["historical","fiction"]},
+	 {"name":"bahubali","year":2014 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"andhra","collection":2000,
+	 "tags":["historical","fiction"]},
+	 {"name":"bahubali2","year":2017 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"nijam","collection":7000,
+	 "tags":["historical","fiction"]},
+	  {"name":"bahubali2","year":2017 ,"director":"ss rajamouli", 
+	 "producer": "shobu yarlagadda","area":"andhra","collection":2000,
+	 "tags":["historical","fiction"]},
+	 {"name":"oopiri","year":2014 ,"director":"Vamsi Paidipally",
+	 "producer": "PVP Cinema","area":"andhra","collection":9000,
+	 "tags":["drama"]},
+	 {"name":"oopiri","year":2014 ,"director":"Vamsi Paidipally",
+	 "producer": "PVP Cinema","area":"nijam","collection":7000,
+	 "tags":["drama"]},
+	 {"name":"Srimanthudu","year":2015 ,"director":"Koratala Siva",
+	 "producer": "Mahesh Babu","area":"andhra","collection":8000,
+	 "tags":["action","drama"]},
+	 {"name":"Srimanthudu","year":2015 ,"director":"Koratala Siva",
+	 "producer": "Mahesh Babu","area":"nijam","collection":2000,
+	 "tags":["action","drama"]},
+	 {"name":"Janatha Garage","year":2016 ,"director":"Koratala Siva",
+	 "producer": "Mythry movie makers","area":"andhra","collection":8000,
+	 "tags":["action","drama"]},
+	  {"name":"Janatha Garage","year":2016 ,"director":"Koratala Siva",
+	 "producer": "Mythry movie makers","area":"nijam","collection":2900,
+	 "tags":["action","drama"]},
+	 {"name":"Temper","year":2015 ,"director":"Puri Jagannadh",
+	 "producer": "Bandla Ganesh","area":"andhra","collection":3000,
+	 "tags":["action","drama"]},
+	  {"name":"Temper","year":2015 ,"director":"Puri Jagannadh",
+	 "producer": "Bandla Ganesh","area":"nijam","collection":6000,
+	 "tags":["action","drama"]}])
+   	
+	 	
+	now if you want to get the number of movies by genre
+	
+	- db.movies.aggregate([{"$unwind":"$tags"}])
+	
+	now you see every tag is unwinded and created a document for each.
+	
+	eg:
+	
+	-{ "_id" : ObjectId("582a7ab8d9cff612e72bc04f"), "name" : "bahubali", "year" : 2014, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "nijam", "collection" : 4000, "tags" : "historical" }
+	{ "_id" : ObjectId("582a7ab8d9cff612e72bc04f"), "name" : "bahubali", "year" : 2014, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "nijam", "collection" : 4000, "tags" : "fiction" }
+	{ "_id" : ObjectId("582a7ab8d9cff612e72bc050"), "name" : "bahubali", "year" : 2014, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "andhra", "collection" : 2000, "tags" : "historical" }
+	{ "_id" : ObjectId("582a7ab8d9cff612e72bc050"), "name" : "bahubali", "year" : 2014, "director" : "ss rajamouli", "producer" : "shobu yarlagadda", "area" : "andhra", "collection" : 2000, "tags" : "fiction" }
+	
+	- db.movies.aggregate([{"$unwind":"$tags"},
+	{"$group":{"_id":"$tags","count":{"$sum":1}}}])
+	
+	result set
+	
+	- { "_id" : "action", "count" : 6 }
+	{ "_id" : "drama", "count" : 8 }
+	{ "_id" : "fiction", "count" : 4 }
+	{ "_id" : "historical", "count" : 4 }
+	
+	you can project the _id as genre.
+	
+	Note .. the example count is not accurate as tags are duplicated for the same movie record by area.
+	
+>  DOUBLE UNWIND
+
+	if you have multiple arrays
+	
+	- db.abc.insertMany([{"a":"a","b":["a","b","c"],"x":["x","y","z"]},
+	{"a":"a","b":["a","b","c"],"x":["x","y","z"]},
+	{"a":"a","b":["a","b"],"x":["z"]},
+	{"a":"a","b":["b","c"],"x":["x","y","z"]},
+	{"a":"b","b":["c"],"x":["x","y","z"]},
+	{"a":"b","b":["a","c"],"x":["x"]},
+	{"a":"b","b":["a","b","c"],"x":["x","z"]}])
+	
+	now double unwind
+	
+	- db.abc.aggregate([{"$unwind":"$b"},{"$unwind":"$x"},{"$project":{"_id":0,"a":1,"b":1,"x":1}}])
+	
+	partial result set
+	
+	- { "a" : "a", "b" : "a", "x" : "x" }
+	{ "a" : "a", "b" : "a", "x" : "y" }
+	{ "a" : "a", "b" : "a", "x" : "z" }
+	{ "a" : "a", "b" : "b", "x" : "x" }
+	{ "a" : "a", "b" : "b", "x" : "y" }
+	{ "a" : "a", "b" : "b", "x" : "z" }
+	{ "a" : "a", "b" : "c", "x" : "x" }
+	{ "a" : "a", "b" : "c", "x" : "y" }
+	{ "a" : "a", "b" : "c", "x" : "z" }
+		
+	- db.abc.aggregate([{"$unwind":"$b"},{"$unwind":"$x"},
+	{"$group":{"_id":{"b":"$b","x":"$x"},"count":{"$sum":1}}}])
+	
+	result set
+	
+	- { "_id" : { "b" : "b", "x" : "z" }, "count" : 5 }
+	{ "_id" : { "b" : "b", "x" : "y" }, "count" : 3 }
+	{ "_id" : { "b" : "c", "x" : "y" }, "count" : 4 }
+	{ "_id" : { "b" : "a", "x" : "x" }, "count" : 4 }
+	{ "_id" : { "b" : "c", "x" : "z" }, "count" : 5 }
+	{ "_id" : { "b" : "c", "x" : "x" }, "count" : 6 }
+	{ "_id" : { "b" : "a", "x" : "y" }, "count" : 2 }
+	{ "_id" : { "b" : "a", "x" : "z" }, "count" : 4 }
+	{ "_id" : { "b" : "b", "x" : "x" }, "count" : 4 }
+	
+>   SQL to MONGODB Aggregation mapping
+
+	WHERE - $match
+	GROUP BY - $group
+	HAVING - $match
+	SELECT - $project
+	ORDER BY - $sort
+	limit - $limit
+	SUM() - $sum
+	COUNT() - $sum
+	JOIN - though there is no direct mapping $unwind unwinds the arrays, close functionality
+			 but with in the document
+			 
+>
+
+	
+	
+	
