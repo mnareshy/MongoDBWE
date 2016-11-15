@@ -627,7 +627,18 @@ Just for an instance in RDBMS, If you want to get the number of movies by the di
 	JOIN - though there is no direct mapping $unwind unwinds the arrays, close functionality
 			 but with in the document
 			 
->
+> Limitations of Aggregation
+
+	- 100 mb of memory by default for pipeline stages -  use option allowDiskUse to overcome this
+	- if you use $out then there is a limit og 16mb in the output.
+	- In a sharded environment if you do $group,$sort you dont get all the data in shard. Mongos sends the 
+	  request to primary shard where you have unsharded data , hence the results will be sent to another shord for 
+	  accumulating the end result. So there is a scalability hit, where HADOOP MR works wit parallelism hence far 
+	  better performance. Mongo also offers MR but its work for very small data. 
+	  
+	  Aggregation is better choice than  MongoDB Map Reduce.
+	  
+	
 
 	
 	
