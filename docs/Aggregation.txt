@@ -380,7 +380,7 @@ Just for an instance in RDBMS, If you want to get the number of movies by the di
 	now you have the data only for andhra, if you want to sum the collection by director and  get list of movies
 	add the $group to the pipeline.
 	
-	 - db.movies.aggregate([{"$match":{"area":"andhra"}},
+    - db.movies.aggregate([{"$match":{"area":"andhra"}},
 	 	{"$group":{"_id":"$director","collection":{"$sum":"$collection"},"movies":{"$addToSet":"$name"}}}])
 	
 	result set
@@ -406,6 +406,32 @@ Just for an instance in RDBMS, If you want to get the number of movies by the di
 	{ "collection" : 4000, "movies" : [ "bahubali2", "bahubali" ], "director" : "ss rajamouli" }
 	
 	note that the order of the elements in the collection is not guaranteed. 
+	
+	how would you perform $match with 2 keys, $and / $or operators help here .
+	
+	db.collections.aggregate([{"$match":{"$or":[{"state":"AP"},{"state":"KA"}}]}},{"$group":...}])
+	
+	certainly there are few movies which starts with numbers eg: "1nenokkade",
+	how would you find the movies starts with numbers?
+	
+	first lets get the first char of the movie name
+	
+	- db.movies.aggregate([{$project:{ first_char: {$substr : ["$name",0,1]} }}]) 
+	
+	now do a match
+	
+	- db.movies.aggregate([
+		{$project:{ "first_char": {$substr : ["$movie",0,1]} ,"movie":1,"director":1}},
+		{$match: {first_char: /^\d.*/  }} ,
+		{"$group":{"_id":"$_id", "movies":{"$addToSet":"$name"}}}])
+		
+		
+   different ways of finding if the string is number - TBD
+  
+   {$match: { movie: /^\d.*/ } },
+   {$match: {movie: {$type: 16}}} 
+   {"$match":{ "first_char":{"$type":16}}}	
+		
 	
 >	$sort
 	
