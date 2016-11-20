@@ -1,0 +1,311 @@
+>	MongoDb maintains a log of writes for recovery of in-flight data at unexpectable times which is know as Journal.
+	journal is maintained in memory. Generally journal functionality is specific to the storage engine.
+	
+	WiredTiger uses checkpoints to provide a consistent view of data on disk and allow MongoDB
+	 to recover from the last checkpoint. 	However, if MongoDB exits unexpectedly in between 
+	 checkpoints, journaling is required to recover information that occurred after the last checkpoint.
+	 
+	Journal Looks in the data files to find the identifier of the last checkpoint,and Searches in the journal
+	files for the record that matches the identifier of the last checkpoint. Execute the operations in the journal
+	files since the last checkpoint.
+	
+	 WT maintains the data and index modifications on the same record. And one file per client.
+	 Sync of journal to the disk happens in the  following conditions.
+	 
+	 - 50 ms
+	 - Checkpoints gets created on 60sec or if the user data cross 2gb.
+	 - when the journal cross 100 mb , it creates a new file. And WT syncs the old one.
+	 - if the user forces to sync the journal data to disk.
+	 
+	For every write MongoDF keeps the data into memory pages , memory pages gets sync with disk based on memory pressure.
+	MongoDB also maintains the write data in journal which is again in memory. Journal gets sync with disk based on memory 
+	pressure and the above said conditions.
+	
+	Until journal gets into the disk we can not consider the write operation is successful.
+	
+	When we write the data , as and when the data gets into memory pages we get ack back by default. which is managed by
+	a value of "w". 
+	
+	if w=1 (default) which means that wait for server respond back.There is another value for journal "j". it is 
+	false by default which is to get the status of journal. if it is true, then server has to wait until journal syncs up
+	with disk, in fact it forces to while waiting.
+	
+	W value and J value combinedly  known as write concern.
+	
+	if w=1 j=false -  wait for server response but not for journal sync.   - fast, small vulnerability 
+	if w=1 j=true  -  wait for both										   - slow, no vulnerability
+	if w=0 j=false -  dont wait											   - may be fast from client prospective,not recommended.
+	
+
+	Note : this is for singe server environment, there are different values of W in multi node environment.
+	
+	
+>	NETWORK ERRORS 
+	
+	just for instance consider w=1 and J=false.
+	In a scenario when you have initiated a write operation and you don't get response back due to a network failure while the
+	server is trying to acknowledge. There are 2 possibilities.
+		1 . write would have not happened
+		2 . write would have happened and ack is not returned due to network failure.
+		
+	on case 2 there is not much issue with inserts, because if you try to re insert you might end-up getting duplicate _id value 
+	error or you might end-up with a duplicate document defends how you handled _id.
+	But the issue is with update, just for instance you have issues  a command to increment certain value in selected documents 
+	using $inc. Now considering the possibility 2 if you try to re execute you might end-up with double increment.
+	
+	So in such scenarios its better to read first and update based on condition.
+	
+	
+>	REPLICATION 
+	
+	To achieve high availability and fault tolerance REPTION is used.
+	
+	Replica set consists of primary and secondary nodes. The default replication is 3 which means that one primary and 2 
+	secondary nodes, but this is dynamic. 
+	
+	Client always connects to primary, just for instance primary goes down there will be election on the remaining nodes to elect
+	the new primary. To do election you have to have strict majority of original number of nodes.And then client Application
+	connects to the new primary.When old primary comes back, it rejoins the group as secondary.
+	
+>	TYPES OF REPLICA SET NODES
+	
+	-  Regular 			 - any actual node which can be primary or secondary
+	-  Arbitrary Node	 - Not an actual node, just can be used for voting purpose. if you have 2 machines and cannot use replication
+							as replication require majority of nodes for election when primary goes down. Arbitrary node can be
+							created in one of the machines just for election purpose.	
+	-  Delayed/Regular	 - Disaster recovery node, can be set a n hours delay sync with primary. Can participate in voting.
+							but it cannot became primary, to achieve this value of p is set to 0 ie: p=0;
+	-  Hidden			 - Used for analytics , can participate in voting but cannot became primary.
+	
+	 
+> 	WRITE CONSISTANCY
+
+	By default mongo clients connects to primary for writes and reads. In a situation if you are trying tp perform a write operation
+	when primary goes down, it cannot happen. Because there is no primary and the there a certain time of election process to elect the
+	next primary.
+	
+	Your writes always should go to primary, but reads can go to secondary if you prefer.Then the lag between primary and secondary
+	can not be guaranteed as the sync is asynchronous!  If reads and writes goes to primary then there is a strong consistency of data.
+
+	
+	Eventual consistency means , eventually you can guarantee the reads are consistent with writes. This can be achieved by 
+	configuring to do reads from secondaries. This scales up the reads performance but cannot guarantee consistency.
+
+
+>	CREATE REPLICAL SET - Single machine
+
+	In multi node environment each mongo server runs on different machine for better fault tolerance and high availability.
+	
+	lets try creating 3 replicas in a single machine
+	
+	- mkdir rs1 rs2 rs3
+	
+	create 3 directories for 3 different servers 
+	
+	- mongod --replSet rs2 --logpath "1.log" --dbpath /home/sairam/work/db/data/rs1 --port 1111 --fork
+	- mongod --replSet rs2 --logpath "2.log" --dbpath /home/sairam/work/db/data/rs2 --port 2222 --fork
+	- mongod --replSet rs2 --logpath "3.log" --dbpath /home/sairam/work/db/data/rs3 --port 3333 --fork
+	
+	
+	Run mongod s for all replicas , fork is used to return back.
+	
+	Note the name "rs2" is same for all the replicas.
+	
+	
+	They run with a error message that it cannot find the local replication, because they are independent servers.
+	
+	To make them aware each other you need to create the configuration.
+	
+	- config =  {"_id":"rs2", "members":[
+		{"_id":0, "host":"sairam-HP-Notebook:1111","priority":0,"slaveDelay":5},
+		{"_id":1, "host":"sairam-HP-Notebook:2222"},
+		{"_id":2, "host":"sairam-HP-Notebook:3333"}
+		]}
+	
+	host 1111 can not became primary as the "priority":0 , hence the replica configurations cannot be configured
+	 by connecting to it.
+	 
+	- rs.initiate(config)
+	- rs.status()
+	
+	
+	- rs2:PRIMARY> db.names.insertOne({"name":"sairam"}) - works
+	- rs2:SECONDARY> db.names.insertOne({"name":"sairam"}) - does not work , through error as the secondary is not
+																permitted for writes.
+																
+	- rs2:SECONDARY> db.names.findOne() - does not work , through error: ""not master and slaveOk=false"
+	
+	by default secondaries are not allowed for reads.
+	
+	- rs.slaveOk()
+	
+	- rs2:SECONDARY> db.names.findOne()
+	
+	now it works
+	
+	
+>	REPLICA SET 
+	
+	OPLOG -
+	
+	Operations Log is a  capped collections which is available in local.oplog.rs, which is used by primary to record
+	all the operations it perform. Secondaries copy the log operations into their servers asynchronously.
+	
+	- rs2:PRIMARY> use local;
+	- rs2:PRIMARY> db.oplog.rs.find().pretty()
+	
+	Here you go
+	
+	{
+		"ts" : Timestamp(1479626121, 1),
+		"h" : NumberLong("-3803738666232957400"),
+		"v" : 2,
+		"op" : "n",
+		"ns" : "",
+		"o" : {
+			"msg" : "initiating set"
+		}
+	}
+	{
+		"ts" : Timestamp(1479626133, 1),
+		"t" : NumberLong(1),
+		"h" : NumberLong("-9041702381412671362"),
+		"v" : 2,
+		"op" : "n",
+		"ns" : "",
+		"o" : {
+			"msg" : "new primary"
+		}
+	}
+	{
+		"ts" : Timestamp(1479626501, 1),
+		"t" : NumberLong(1),
+		"h" : NumberLong("-5230677406914645201"),
+		"v" : 2,
+		"op" : "c",
+		"ns" : "test.$cmd",
+		"o" : {
+			"create" : "names"
+		}
+	}
+	{
+		"ts" : Timestamp(1479626501, 2),
+		"t" : NumberLong(1),
+		"h" : NumberLong("3693200339719499746"),
+		"v" : 2,
+		"op" : "i",
+		"ns" : "test.names",
+		"o" : {
+			"_id" : ObjectId("58314f0556a4a1ec8677057a"),
+			"name" : "sairam"
+		}
+	}
+	
+	See the last insert that you have done.
+	
+	- rs2:SECONDARY> use local;
+	- rs2:SECONDARY> db.oplog.rs.find().pretty()
+	
+	you see the same log as primary.
+	
+	- rs.status() on Secondary gives us the oplog sync-up details.
+	
+	oplog is a capped collection, which means that after some threshold it rolls out. Incase the secondary 
+	is not sync'd with primary and oplog rolls out and seconday cannot get primaries oplog, 
+	secondary has to read the entire db , which is much	slower.
+	
+	oplog used document based approach, they actually mongodb documents. With this its does not matter
+	which version you use in different replicas and does not matter which storage engine you use in different
+	replicas.
+	
+	This is helpful while upgrades, as the you can stay in different versions and with different storage engines.
+	
+	
+	- ps -ef | grep mongod
+	
+	- kill primary
+	
+	now try the status on secondaries,
+	
+	- rs2:SECONDARY> rs.status() 
+	
+	one of them would have became primary already!
+	
+>	ROLLBACK
+
+	on a failover case , where writes happen on primary and before oplog sync-up goes down secondaries will not have 
+	the new writes. of course one of the secondary will became primary.
+	
+	what happens if the the old primary come live.it will became secondary and looks into new primary's oplog for 
+	sync-up. when it realizes there are writes in it and did not sync with new primary then it rolls back the data
+	into a file. Later this file can be manually inserted in primaries.
+	
+>	In a replica node environment write concern will have more values.
+	
+	just for instance consider 3 replicas
+	
+	then "w" will have values of 1,2,3  - if its one client wait only for primary to acknowledge, if its 2
+									     it waits for one another secondary to acknowledge, if its 3 client waits 
+									     for all the replicas to acknowledge.
+									     
+	In the same scenario w = 2 will not guarantee that which secondary needs to acknowledge , its important as if	
+	primary goes down and the the secondary which a	elects as primary which is not acknowledged means we lost the
+	writes. This might not happen in most of the cases , however mongo provides another option
+	
+	ie w="mejority"		 where the client waits for the mejority of nodes to acknowledge.
+	
+	There is another parameter "wtimeout" which tells that how much time client should wait.
+	
+	j is just one and it concerns only about primary.
+	
+	These values can be set at connection level/ collection level / replica level
+	
+	replica level is safer as this prompts all the developers to use the same configuration.
+	
+	If you set w=1 and j=1,it is possible to wind up rolling back a committed write to the primary on failover?
+	
+	
+
+	
+	
+	
+	
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+

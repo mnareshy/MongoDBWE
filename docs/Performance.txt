@@ -37,7 +37,7 @@
  
 > with this update in memory can be managed.
 
-> OS decides what is memory and what is in disk. 	
+> OS decides what is in memory and what is in disk. 	
 
 > Wire Tiger
 
