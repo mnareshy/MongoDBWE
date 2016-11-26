@@ -106,7 +106,9 @@
 	- mongod --replSet rs2 --logpath "2.log" --dbpath /home/sairam/work/db/data/rs2 --port 2222 --fork
 	- mongod --replSet rs2 --logpath "3.log" --dbpath /home/sairam/work/db/data/rs3 --port 3333 --fork
 	
-	
+	To set the oplog size  use --oplogSize 64
+	To set the small file size (for mmap storage engine - TBD) use --smallfiles 
+		
 	Run mongod s for all replicas , fork is used to return back.
 	
 	Note the name "rs2" is same for all the replicas.
@@ -264,48 +266,234 @@
 	
 	If you set w=1 and j=1,it is possible to wind up rolling back a committed write to the primary on failover?
 	
+
+>	READ PREFERENCS 
+	
+	- primary - reads are allowed only from primary
+	- primarypreferred - reads are preferred  from primary, in case primary is not available read from secondaries.
+	- secondary - reads are only from secondary.
+	- secondarypreferred - reads are preferred  from secondary, in case secondary is not available read from primary.
+	- near - read it from nearest node. there is a sub concept called tag set which is basically data center related.
+			  anything with in 15ms considered as closest.
+	
+	if you decided to read with secondary preference , they you will have eventually consistency.
 	
 
 	
+> 	IPLICATIONS OF REPLICATION
+	
+	- seed list - on mongo drivers we mention one node and the driver is able to find the primay, which means
+				  that the seed lists are exists.
+	- write concern
+	- read preferences
+	- errors - errors can still happen after all replications.Genrally errors can happen in transient situations
+				like failover and the same time network error ... etc 
+				
+	For a robust application you need to handle exceptions properly.
 	
 	
+>	SHARDING
 	
-		
+	Sharding is used to scale out the capacity.
 	
+	There could be many shards in a sharding environment , There could be multiple replicas with in a shard.
 	
+	mongos works as a router for handling all the shards , application connecets to mongos and mongos routes to
+	shard.
 	
+	SHARD KEY - used to find the right shard.
 	
+	Just for instance if you store the movies collection on a sharded db, then the collection broken up into chuncks,
+	chuncks get in into different shards using balancer which ensures the capacity is balanced. 
 	
+	So the given collection is stored in muliple shards.	There ia  way ot identify the shards,  using
+	range using shard key. Using movie_id, mongos looks into which chunks it belongs to and then look
+	for which chunck is mapped to which shard and directs the query. in this case movie_id is shard key.
 	
+	If you query without shard_key , then the query will be sent to all the shard. Result is gathered back and respond
+	to the client. in this case it is slower than the query with shard key.
 	
+	In case of inserts you need to include the shard key, because it need to know in with shard the document need to be
+	in. For instance if you declare a particular filed as shard key say movie_id then documents with out movies_id
+	are illegal.
 	
+	Sharding is at db level, if you decide you don't want to shard a collection it sits on s0 which is first shard.
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	Mongos can be multiple of them , they are state less. You always connect to mongos not to the shard(mongod) directly.
+	you can still connect to mongod's for administration purpose.
 	
 	
+	There are another set of servers called config servers, which holds the information about the way the data is 
+	distributed across the shards. Typically tou will have 3 config servers.
 	
+	These config servers know the way the chunks mapped to the shards. Config servers do a two phase commit to do
+	any changes.All these happen on the background . Config servers kepp track of where document maps to shards and
+	mongos asks config servers for the information. 
 	
+	There are 2 ways of sharding 1) range based 2) hash based
 	
-	
+>	CREATING A SGARDED ENVRONMENT in a single machine
 
+	remove if you have old configs
+	
+	- rm -rf /data/config
+	- rm -rf/data/shard*
+	
+	create replica set and bound them to a Shard
+	
+	- mkdir -p /data/shard0/rs0 /data/shard0/rs1 /data/shard0/rs2
+	
+	- mongod --replSet s0 --logpath "s0-r0.log" --dbpath /home/sairam/work/db/data/sharded/data/shard0/rs0 --port 1111 --fork --shardsvr --smallfiles
+	- mongod --replSet s0 --logpath "s0-r1.log" --dbpath /home/sairam/work/db/data/sharded/data/shard0/rs1 --port 2222 --fork --shardsvr --smallfiles
+	- mongod --replSet s0 --logpath "s0-r2.log" --dbpath /home/sairam/work/db/data/sharded/data/shard0/rs2 --port 3333 --fork --shardsvr --smallfiles
+	
+	
+	create config file for S0
+	
+	- config =  {"_id":"s0", "members":[
+		{"_id":0, "host":"127.0.0.1:1111"},
+		{"_id":1, "host":"127.0.0.1:2222"},
+		{"_id":2, "host":"127.0.0.1:3333"}
+		]}
+	
+ 
+	- rs.initiate(config)
+	
+	for reconfiguration
+	
+	- rs.reconfig(config, {force:true})
+	- rs.status()
+	
+	
+	Repete the steps for shard 2
+	
+	- mkdir -p /data/shard1/rs0 /data/shard1/rs1 /data/shard1/rs2
+	
+	- mongod --replSet s1 --logpath "s1-r0.log" --dbpath /home/sairam/work/db/data/sharded/data/shard1/rs0 --port 4444 --fork --shardsvr --smallfiles
+	- mongod --replSet s1 --logpath "s1-r1.log" --dbpath /home/sairam/work/db/data/sharded/data/shard1/rs1 --port 5555 --fork --shardsvr --smallfiles
+	- mongod --replSet s1 --logpath "s1-r2.log" --dbpath /home/sairam/work/db/data/sharded/data/shard1/rs2 --port 6666 --fork --shardsvr --smallfiles
+	
+	create config file for S1
+	
+	- config =  {"_id":"s1", "members":[
+		{"_id":0, "host":"127.0.0.1:4444"},
+		{"_id":1, "host":"127.0.0.1:5555"},
+		{"_id":2, "host":"127.0.0.1:6666"}
+		]}
+	
+ 
+	- rs.initiate(config)
+	for reconfiguration
+	
+	- rs.reconfig(config, {force:true})
+	
+	- rs.status()
+	
+	Repete the steps for shard 3
+	
+	- mkdir -p /data/shard2/rs0 /data/shard2/rs1 /data/shard2/rs2
+	
+	- mongod --replSet s2 --logpath "s2-r0.log" --dbpath /home/sairam/work/db/data/sharded/data/shard2/rs0 --port 7777 --fork --shardsvr --smallfiles
+	- mongod --replSet s2 --logpath "s2-r1.log" --dbpath /home/sairam/work/db/data/sharded/data/shard2/rs1 --port 8888 --fork --shardsvr --smallfiles
+	- mongod --replSet s2 --logpath "s2-r2.log" --dbpath /home/sairam/work/db/data/sharded/data/shard2/rs2 --port 9999 --fork --shardsvr --smallfiles
+	
+	create config file for S2
+	
+	- config =  {"_id":"s2", "members":[
+		{"_id":0, "host":"127.0.0.1:7777"},
+		{"_id":1, "host":"127.0.0.1:8888"},
+		{"_id":2, "host":"127.0.0.1:9999"}
+		]}
+	
+ 
+	- rs.initiate(config)
+	for reconfiguration
+	
+	- rs.reconfig(config, {force:true})
+	- rs.status()
+	
+	Create Config servers now
+	
+	- mkdir -p /data/config-a /data/config-b /data/config-a
+	
+	- mongod  --logpath "config-a.log" --dbpath /home/sairam/work/db/data/sharded/data/config-a --port 1212 --fork --configsvr --smallfiles
+	- mongod  --logpath "config-b.log" --dbpath /home/sairam/work/db/data/sharded/data/config-b --port 1313 --fork --configsvr --smallfiles
+	- mongod  --logpath "config-c.log" --dbpath /home/sairam/work/db/data/sharded/data/config-c --port 1414 --fork --configsvr --smallfiles
+	
+	
+	Now Start mongos
+	
+	- mongos --logpath "mongos-1.log" --configdb 127.0.0.1:1212,127.0.0.1:1313,127.0.0.1:1414 --fork
+	
+	
+	now connect to mongos and add the shards to mongos
+	
+	- db.adminCommand({addshard : "s0/" + "127.0.0.1:1111"});
+	- db.adminCommand({addshard : "s1/" + "127.0.0.1:4444"});
+	- db.adminCommand({addshard : "s2/" + "127.0.0.1:7777"});
+	
+	- db.adminCommand({enableSharding : "movies"});
+	- db.adminCommand({shardCOllection : "movies.actors", key:{"actor_id":1}});
+	
+	here actor_id is a shard key which is mandatory in a collectoin.
+	
+	// shard collections should be indexed, when you add a new collection it will be indexed by default.
+	
+	Insert actors collection and then
+	
+	- sh.status()
+	
+	gives you the details of chunks range in shards.
+	
+	if you try to get indexes
+	
+	- db.actors.getIndexes()
+	[
+		{
+			"v" : 1,
+			"key" : {
+				"_id" : 1
+			},
+			"name" : "_id_",
+			"ns" : "movies.actors"
+		},
+		{
+			"v" : 1,
+			"key" : {
+				"actor_id" : 1
+			},
+			"name" : "actor_id_1",
+			"ns" : "movies.actors"
+		}
+	]
+	
+	- db.actors.explain().find() 
+	
+	gives the details of shards for instance if it retrieves from multiple shards "SHARD MERGE" otherwise "SINGLE SHARD"!
+	explore more!
+	
+>	IMPLICATIONS OF SHARDING
+	
+	every document must include shard key
+	shard key is immutable
+	index on starting with shard key
+	On an update you need to send the shard key or multi
+	no shard key means its going to be broadcasted
+	no unique key index, unless part of the shard key or starting of shard key
+	
+>	CHOOSING SHARD_KEY
 
-
+	Shard key should have good cardinality as the data should span across shards, other wise you will endup spreading
+	data across few!
+	
+	on the contrest if the the shard key is monotonically increasing then you will endup hitting the last shard 
+	continuously. Because the always the range is never seen and mongos directs to the last shard.
+	
+	
+> 
+	
+	
+	
+	
+	
+	
